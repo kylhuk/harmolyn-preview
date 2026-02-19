@@ -134,7 +134,7 @@ export const Layout: React.FC = () => {
 
       {/* Side Rail: Hidden on Mobile */}
       {!isMobile && (
-        <div className="relative z-50" onMouseEnter={() => setChannelListHovered(true)}>
+        <div className="relative z-50">
             <ServerRail 
             servers={SERVERS} 
             activeServerId={state.activeServerId} 
@@ -148,14 +148,21 @@ export const Layout: React.FC = () => {
           {/* Channel list */}
           {!isExplore && (!isMobile || state.mobileMenuOpen) && (
             <>
-                <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.channelListCollapsed && !isMobile ? 'w-[280px]' : 'w-[12px]'}`}></div>
+                <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.channelListCollapsed && !isMobile ? 'w-[280px]' : 'w-[6px]'}`}></div>
+
+                {/* Narrow hover trigger strip — only active when collapsed */}
+                {state.channelListCollapsed && !isMobile && (
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-[6px] z-[41]"
+                    onMouseEnter={() => setChannelListHovered(true)}
+                  />
+                )}
 
                 <div 
                     className={`
                         absolute left-0 top-0 bottom-0 z-40 h-full w-[280px]
                         ${isMobile ? 'z-[60]' : ''} 
                     `}
-                    onMouseEnter={() => setChannelListHovered(true)}
                     onMouseLeave={() => setChannelListHovered(false)}
                 >
                     <ChannelRail 
@@ -214,7 +221,7 @@ export const Layout: React.FC = () => {
                              {/* Single unified hover zone + sidebar container (desktop only) */}
                              <div 
                                 className={`absolute right-0 top-0 bottom-0 z-40 h-full transition-all duration-200 ${
-                                  state.memberListCollapsed && !memberListHovered ? 'w-3 cursor-pointer' : 'w-[280px]'
+                                  state.memberListCollapsed && !memberListHovered ? 'w-[12px] cursor-pointer' : 'w-[280px]'
                                 }`}
                                 onMouseEnter={() => { if (!isOverlaySidebar && state.memberListCollapsed) setMemberListHovered(true); }}
                                 onMouseLeave={() => setMemberListHovered(false)}
@@ -222,7 +229,7 @@ export const Layout: React.FC = () => {
                              >
                                 {/* Collapsed indicator strip */}
                                 {state.memberListCollapsed && !memberListHovered && (
-                                  <div className="w-full h-full flex items-center justify-center bg-bg-1 border-l border-white/5">
+                                  <div className="w-full h-full flex items-center justify-center bg-bg-1/50 border-l border-white/5">
                                     <div className="w-1 h-8 bg-white/10 rounded-full"></div>
                                   </div>
                                 )}

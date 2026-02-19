@@ -98,7 +98,7 @@ export const FriendsPanel: React.FC<FriendsPanelProps> = ({ onOpenDM }) => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="flex items-center gap-3 p-3 rounded-r2 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all group"
+      className="flex items-center gap-3 p-3 rounded-r2 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all group hover-lift"
     >
       <div className="relative flex-shrink-0">
         <img src={user.avatar} alt={user.username} className="w-10 h-10 rounded-r2 ring-1 ring-white/10" />
@@ -117,7 +117,7 @@ export const FriendsPanel: React.FC<FriendsPanelProps> = ({ onOpenDM }) => {
   const ActionButton = ({ icon, label, onClick, variant = 'default' }: { icon: React.ReactNode; label: string; onClick: () => void; variant?: 'default' | 'danger' | 'success' }) => (
     <button
       onClick={onClick}
-      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border ${
+      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border btn-press ${
         variant === 'danger' ? 'bg-accent-danger/10 border-accent-danger/20 text-accent-danger hover:bg-accent-danger/20' :
         variant === 'success' ? 'bg-accent-success/10 border-accent-success/20 text-accent-success hover:bg-accent-success/20' :
         'bg-white/5 border-white/10 text-white/50 hover:text-primary hover:border-primary/30 hover:bg-primary/10'

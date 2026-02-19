@@ -103,7 +103,7 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
                             <button 
                                 key={dm.id} 
                                 onClick={() => onSelectChannel(dm.id)}
-                                className={`w-full flex items-center gap-2.5 p-1.5 rounded-r2 border transition-all cursor-pointer ${active ? 'bg-primary/10 border-primary/20 text-primary shadow-[inset_0_0_10px_rgba(19,221,236,0.1)]' : 'bg-transparent border-transparent theme-text-secondary hover:bg-white/5 hover:theme-text'}`}>
+                                className={`w-full flex items-center gap-2.5 p-1.5 rounded-r2 border transition-all cursor-pointer btn-press ${active ? 'bg-primary/10 border-primary/20 text-primary shadow-[inset_0_0_10px_rgba(19,221,236,0.1)]' : 'bg-transparent border-transparent theme-text-secondary hover:bg-white/5 hover:theme-text'}`}>
                                 <div className="w-7 h-7 rounded-full overflow-hidden border theme-border">
                                     <img src={user.avatar} className="w-full h-full object-cover" alt={user.username} />
                                 </div>
@@ -132,7 +132,7 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
                                 <div key={ch.id}>
                                     <button 
                                         onClick={() => isVoice ? onJoinVoice(ch.id) : onSelectChannel(ch.id)}
-                                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-r2 border transition-all cursor-pointer group ${active ? 'bg-primary/10 border-primary/20 text-primary shadow-inner' : 'bg-transparent border-transparent theme-text-secondary hover:bg-white/5 hover:theme-text'} ${isConnected ? 'bg-accent-success/10 border-accent-success/20 text-accent-success' : ''}`}>
+                                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-r2 border transition-all cursor-pointer group btn-press ${active ? 'bg-primary/10 border-primary/20 text-primary shadow-inner' : 'bg-transparent border-transparent theme-text-secondary hover:bg-white/5 hover:theme-text'} ${isConnected ? 'bg-accent-success/10 border-accent-success/20 text-accent-success' : ''}`}>
                                         {isVoice ? <Volume2 size={14} /> : <Hash size={14} />}
                                         <span className="text-xs font-medium tracking-tight flex-1 text-left">{ch.name}</span>
                                         {ch.unreadCount && !active && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
@@ -245,9 +245,9 @@ const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = 
         {hasAccountSwitching && (
           <button onClick={() => setShowAccountSwitcher(!showAccountSwitcher)} aria-label="Switch Account" className="p-1 text-white/40 hover:text-primary transition-colors"><ArrowUpDown size={14} /></button>
         )}
-        <button aria-label="Mute Microphone" className="p-1 text-white/40 hover:text-primary transition-colors"><Mic size={14} /></button>
-        <button aria-label="Deafen Audio" className="p-1 text-white/40 hover:text-primary transition-colors"><Headphones size={14} /></button>
-        <button onClick={onOpenSettings} aria-label="Open Settings" className="p-1 text-white/40 hover:text-primary transition-colors"><Settings size={14} /></button>
+        <button aria-label="Mute Microphone" className="p-1 text-white/40 hover:text-primary transition-colors btn-press"><Mic size={14} /></button>
+        <button aria-label="Deafen Audio" className="p-1 text-white/40 hover:text-primary transition-colors btn-press"><Headphones size={14} /></button>
+        <button onClick={onOpenSettings} aria-label="Open Settings" className="p-1 text-white/40 hover:text-primary transition-colors btn-press"><Settings size={14} /></button>
       </div>
     </div>
   );

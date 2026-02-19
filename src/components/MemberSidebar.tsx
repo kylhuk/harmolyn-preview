@@ -62,7 +62,7 @@ const TimeoutModal: React.FC<{ user: User; onClose: () => void }> = ({ user, onC
           value={reason}
           onChange={e => setReason(e.target.value)}
           placeholder="Reason for timeout..."
-          className="w-full bg-surface-dark rounded-r1 px-4 py-2.5 text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-accent-warning/30 focus:outline-none mb-5"
+          className="w-full bg-surface-dark rounded-r1 px-4 py-2.5 text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-accent-warning/30 focus:outline-none mb-5 focus-ring"
         />
 
         <button

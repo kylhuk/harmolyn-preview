@@ -36,17 +36,17 @@ export const CreateServerModal: React.FC<CreateServerModalProps> = ({ onClose })
                             <input 
                                 type="text" 
                                 placeholder="THE // HUB" 
-                                className="w-full bg-bg-0/50 border border-white/10 rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:border-primary focus:shadow-glow transition-all font-mono placeholder-white/10" 
+                                className="w-full bg-bg-0/50 border border-white/10 rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:border-primary focus:shadow-glow transition-all font-mono placeholder-white/10 focus-ring" 
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 rounded-r2 border border-white/5 glass-panel cursor-pointer hover:border-primary/40 transition-all flex flex-col gap-1.5">
+                            <div className="p-3 rounded-r2 border border-white/5 glass-panel cursor-pointer hover:border-primary/40 transition-all flex flex-col gap-1.5 btn-press">
                                 <Lock size={16} className="text-primary" />
                                 <div className="font-bold text-xs text-white">Private</div>
                                 <div className="text-[9px] text-white/30">Restricted access</div>
                             </div>
-                            <div className="p-3 rounded-r2 border border-primary/20 bg-primary/5 cursor-pointer flex flex-col gap-1.5 relative shadow-glow">
+                            <div className="p-3 rounded-r2 border border-primary/20 bg-primary/5 cursor-pointer flex flex-col gap-1.5 relative shadow-glow btn-press">
                                 <Globe size={16} className="text-primary" />
                                 <div className="font-bold text-xs text-white">Public</div>
                                 <div className="text-[9px] text-white/30">Discoverable node</div>
@@ -62,7 +62,7 @@ export const CreateServerModal: React.FC<CreateServerModalProps> = ({ onClose })
                 
                 <div className="bg-white/5 px-8 py-5 flex justify-between items-center border-t border-white/5 backdrop-blur-xl">
                     <button onClick={onClose} className="text-white/40 hover:text-white micro-label transition-all">Cancel</button>
-                    <button onClick={onClose} className="bg-primary hover:bg-primary/90 text-bg-0 font-bold py-2.5 px-8 rounded-full micro-label tracking-tight shadow-glow hover:scale-105 transition-all">Initiate Matrix</button>
+                    <button onClick={onClose} className="bg-primary hover:bg-primary/90 text-bg-0 font-bold py-2.5 px-8 rounded-full micro-label tracking-tight shadow-glow hover:scale-105 transition-all btn-press">Initiate Matrix</button>
                 </div>
             </div>
         </div>

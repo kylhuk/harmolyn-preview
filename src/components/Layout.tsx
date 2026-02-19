@@ -205,9 +205,9 @@ export const Layout: React.FC = () => {
                             setBgSeed={setBgSeed}
                         />
 
-                        {showMemberSidebar && (
+                         {showMemberSidebar && (
                            <>
-                             {/* Spacer: full width when expanded on desktop, thin strip when collapsed */}
+                             {/* Spacer: full width when expanded on desktop */}
                              <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isOverlaySidebar ? 'w-[280px]' : 'w-0'}`}></div>
 
                              {/* Overlay backdrop for tablet/mobile */}
@@ -217,35 +217,8 @@ export const Layout: React.FC = () => {
                                  onClick={() => setState(s => ({...s, memberListCollapsed: true}))}
                                ></div>
                              )}
-
-                             {/* Hover trigger — sits at the absolute right edge of the viewport-level layout */}
-                             {state.memberListCollapsed && !memberListHovered && !isOverlaySidebar && (
-                               <div 
-                                 className="fixed right-0 top-0 bottom-0 w-[14px] z-[60] cursor-pointer"
-                                 onMouseEnter={() => setMemberListHovered(true)}
-                               >
-                                 <div className="w-full h-full flex items-center justify-center bg-bg-1/30 border-l border-white/5">
-                                   <div className="w-1 h-8 bg-white/10 rounded-full"></div>
-                                 </div>
-                               </div>
-                             )}
-
-                             {/* Expanded sidebar (permanent or hover-peeked) */}
-                             {(!state.memberListCollapsed || memberListHovered) && (
-                               <div 
-                                 className="fixed right-0 top-0 bottom-0 z-[55] w-[280px]"
-                                 onMouseLeave={() => setMemberListHovered(false)}
-                               >
-                                 <MemberSidebar 
-                                     members={activeServer.members} 
-                                     collapsed={false}
-                                     onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
-                                     isOverlay={isOverlaySidebar || (state.memberListCollapsed && memberListHovered)}
-                                 />
-                               </div>
-                             )}
                            </>
-                        )}
+                         )}
                     </>
                 )}
             </div>
@@ -262,6 +235,50 @@ export const Layout: React.FC = () => {
             )}
           </div>
       </div>
+
+      {/* Member sidebar hover trigger + panel — at root level to avoid overflow clipping */}
+      {showMemberSidebar && !isOverlaySidebar && (
+        <>
+          {state.memberListCollapsed && !memberListHovered && (
+            <div 
+              className="absolute right-0 top-0 bottom-0 w-[24px] z-[60] cursor-pointer"
+              onMouseEnter={() => setMemberListHovered(true)}
+            >
+              <div className="w-full h-full flex items-center justify-center border-l border-white/5" style={{ background: 'rgba(10,18,20,0.3)' }}>
+                <div className="w-1 h-8 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}></div>
+              </div>
+            </div>
+          )}
+
+          {memberListHovered && state.memberListCollapsed && (
+            <div 
+              className="absolute right-0 top-0 bottom-0 z-[55] w-[280px]"
+              onMouseLeave={() => setMemberListHovered(false)}
+            >
+              <MemberSidebar 
+                members={activeServer!.members} 
+                collapsed={false}
+                onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
+                isOverlay={true}
+              />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Permanently expanded member sidebar (not collapsed) */}
+      {showMemberSidebar && !state.memberListCollapsed && !isOverlaySidebar && (
+        <div 
+          className="absolute right-0 top-0 bottom-0 z-[55] w-[280px]"
+        >
+          <MemberSidebar 
+            members={activeServer!.members} 
+            collapsed={false}
+            onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
+            isOverlay={false}
+          />
+        </div>
+      )}
     </div>
   );
 };

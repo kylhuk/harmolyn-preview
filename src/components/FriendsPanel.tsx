@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { User, UserStatus } from '@/types';
 import { USERS, CURRENT_USER } from '@/data';
-import { Search, MessageSquare, Phone, X, UserPlus, Users, UserX, Clock, Check, Ban } from 'lucide-react';
+import { Search, MessageSquare, Phone, X, UserPlus, Users, UserX, Clock, Check, Ban, ShieldAlert } from 'lucide-react';
+import { useFeature } from '@/hooks/useFeature';
+import { MessageRequests } from '@/components/MessageRequests';
 
-type FriendsTab = 'online' | 'all' | 'pending' | 'blocked';
+type FriendsTab = 'online' | 'all' | 'pending' | 'blocked' | 'requests';
 
 interface FriendRequest {
   userId: string;
@@ -42,6 +44,7 @@ interface FriendsPanelProps {
 
 export const FriendsPanel: React.FC<FriendsPanelProps> = ({ onOpenDM }) => {
   const [activeTab, setActiveTab] = useState<FriendsTab>('online');
+  const hasMessageRequests = useFeature('messageRequests');
   const [searchQuery, setSearchQuery] = useState('');
   const [addFriendInput, setAddFriendInput] = useState('');
   const [showAddFriend, setShowAddFriend] = useState(false);
@@ -58,6 +61,7 @@ export const FriendsPanel: React.FC<FriendsPanelProps> = ({ onOpenDM }) => {
     { key: 'all', label: 'ALL', count: allFriends.length },
     { key: 'pending', label: 'PENDING', count: pendingRequests.length },
     { key: 'blocked', label: 'BLOCKED', count: blocked.length },
+    ...(hasMessageRequests ? [{ key: 'requests' as FriendsTab, label: 'REQUESTS', count: 3 }] : []),
   ];
 
   const filterUsers = (users: User[]) => {
@@ -164,6 +168,8 @@ export const FriendsPanel: React.FC<FriendsPanelProps> = ({ onOpenDM }) => {
         })}
       </div>
     ) : renderEmptyState(<Clock size={32} />, 'No pending requests', 'Friend requests you send or receive will show up here.');
+  } else if (activeTab === 'requests') {
+    content = <MessageRequests />;
   } else {
     content = blocked.length > 0 ? (
       <div className="space-y-1.5">

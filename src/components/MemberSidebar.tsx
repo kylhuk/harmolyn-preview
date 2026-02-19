@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { User } from '@/types';
 import { PanelRightClose, Clock, X } from 'lucide-react';
 import { useFeature } from '@/hooks/useFeature';
@@ -111,8 +112,14 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed
           <div key={name}>
             <h3 className="micro-label theme-text-dim mb-3 px-2">{name} // {users.length}</h3>
             <div className="space-y-0.5">
-              {users.map(u => (
-                <div key={u.id} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-r1 hover:bg-white/5 transition-all group cursor-pointer relative">
+              {users.map((u, i) => (
+                <motion.div 
+                  key={u.id}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-r1 hover:bg-white/5 transition-all group cursor-pointer relative"
+                >
                   <div className="relative">
                     <img src={u.avatar} className="w-[26px] h-[26px] rounded-r1 border theme-border grayscale-[0.3] group-hover:grayscale-0 transition-all" />
                     <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-bg-1 ${getStatusColor(u.status)}`}></div>
@@ -137,7 +144,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed
                       <Clock size={12} />
                     </button>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>

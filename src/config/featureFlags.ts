@@ -57,10 +57,10 @@ export const FEATURES = {
   // ─── Voice & Video ───────────────────────────────────────
   voiceJoinLeave: true,
   screenShare: false,
-  soundboard: false,
+  soundboard: true,
   activities: false,
-  dmCalls: false,
-  stageChannels: false,
+  dmCalls: true,
+  stageChannels: true,
   voiceTextChat: true,
   voiceControlBar: true,
 
@@ -68,7 +68,7 @@ export const FEATURES = {
   textVoiceChannels: true,
   channelCategories: true,
   forumChannels: true,
-  announcementChannels: false,
+  announcementChannels: true,
   privateChannels: true,
   channelFollowing: false,
   scheduledEvents: true,

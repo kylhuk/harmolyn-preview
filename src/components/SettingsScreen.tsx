@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, User, Shield, Key, Bell, Monitor, LogOut, ChevronRight, Smartphone, Lock, Fingerprint, QrCode, Eye, Command, Accessibility, Crown, ShoppingBag, Trophy } from 'lucide-react';
+import { X, User, Shield, Key, Bell, Monitor, LogOut, ChevronRight, Smartphone, Lock, Fingerprint, QrCode, Eye, Command, Accessibility, Crown, ShoppingBag, Trophy, Zap } from 'lucide-react';
 import { User as UserType } from '@/types';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { useFeature } from '@/hooks/useFeature';
+import { usePerformanceMode } from '@/hooks/usePerformanceMode';
 
 interface SettingsScreenProps {
   user: UserType;
@@ -245,6 +246,7 @@ const MFASection: React.FC = () => {
 const AccessibilitySection: React.FC = () => {
   const [highContrast, setHighContrast] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const { perfMode, togglePerfMode } = usePerformanceMode();
   const [fontSize, setFontSize] = useState<'small' | 'default' | 'large' | 'xlarge'>('default');
   const [saturation, setSaturation] = useState(100);
 
@@ -283,6 +285,25 @@ const AccessibilitySection: React.FC = () => {
               </div>
               <input type="range" min={0} max={200} value={saturation} onChange={e => setSaturation(Number(e.target.value))} className="w-full accent-primary" />
             </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="micro-label text-white/40 border-b border-white/5 pb-2 mb-4">PERFORMANCE</h3>
+          <div className="glass-card rounded-r2 p-4 border border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${perfMode ? 'bg-accent-success/10 text-accent-success' : 'bg-primary/10 text-primary'}`}>
+                <Zap size={18} />
+              </div>
+              <div>
+                <div className="text-white font-bold text-sm">Performance Mode</div>
+                <div className="text-[10px] text-white/40">Disables blur, glows &amp; animations for low-end devices</div>
+                {perfMode && <div className="text-[9px] text-accent-success/70 mt-0.5">Active — effects reduced</div>}
+              </div>
+            </div>
+            <button onClick={togglePerfMode} className={`w-11 h-6 rounded-full transition-all relative ${perfMode ? 'bg-accent-success/30' : 'bg-white/10'}`}>
+              <div className={`w-5 h-5 rounded-full absolute top-0.5 transition-all ${perfMode ? 'left-[22px] bg-accent-success' : 'left-0.5 bg-white/35'}`} />
+            </button>
           </div>
         </section>
 

@@ -633,7 +633,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   )}
                    <div  
                         onMouseEnter={(e) => { if (!e.buttons) setHoveredMessageId(msg.id); }}
-                        onMouseLeave={(e) => { if (!e.buttons) setHoveredMessageId(null); }}
+                        onMouseLeave={(e) => { if (!e.buttons && !reactionMenuMsgId) setHoveredMessageId(null); }}
                         onContextMenu={(e) => handleContextMenu(e, msg.id)}
                         className={`flex gap-2.5 w-full group relative ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                       {!isMe && (
@@ -737,7 +737,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             )}
             <div 
                 onMouseEnter={(e) => { if (!e.buttons) setHoveredMessageId(msg.id); }}
-                onMouseLeave={(e) => { if (!e.buttons) setHoveredMessageId(null); }}
+                onMouseLeave={(e) => { if (!e.buttons && !reactionMenuMsgId) setHoveredMessageId(null); }}
                 onContextMenu={(e) => handleContextMenu(e, msg.id)}
                 onDoubleClick={() => { if (isMe) startEdit(msg); }}
                 className={`flex gap-5 group relative p-2.5 -mx-2.5 rounded-r1 transition-all hover:bg-white/[0.03] ${isSpecial ? 'bg-gradient-to-r from-primary/5 to-transparent border-l-2 border-primary/20' : ''}`}

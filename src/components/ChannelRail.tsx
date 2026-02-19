@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Server, User, UserStatus } from '@/types';
-import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, LogOut, Radio, PanelLeftClose, PanelLeftOpen, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, LogOut, Radio, PanelLeftClose, PanelLeftOpen, ArrowUpDown, Zap, FileText } from 'lucide-react';
 import { USERS, DIRECT_MESSAGES, CURRENT_USER } from '@/data';
 import { StatusPicker } from '@/components/StatusPicker';
 import { AccountSwitcher } from '@/components/AccountSwitcher';
@@ -19,6 +19,9 @@ interface ChannelRailProps {
   onJoinVoice: (id: string) => void;
   onOpenSettings: () => void;
   onOpenServerSettings?: () => void;
+  onOpenBoost?: () => void;
+  onOpenApplications?: () => void;
+  onOpenActivities?: () => void;
   isHome?: boolean;
 }
 
@@ -33,6 +36,9 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
   onJoinVoice,
   onOpenSettings,
   onOpenServerSettings,
+  onOpenBoost,
+  onOpenApplications,
+  onOpenActivities,
   isHome 
 }) => {
   
@@ -63,6 +69,16 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
             <h2 className="font-bold theme-text truncate micro-label text-xs tracking-widest">{isHome ? 'System Hub' : server?.name}</h2>
         </div>
         <div className="flex items-center gap-1">
+          {!isHome && onOpenBoost && (
+            <button onClick={onOpenBoost} className="theme-text-dim hover:text-accent-purple transition-colors" aria-label="Server Boost" title="Boost Server">
+              <Zap size={14} />
+            </button>
+          )}
+          {!isHome && onOpenApplications && (
+            <button onClick={onOpenApplications} className="theme-text-dim hover:text-accent-warning transition-colors" aria-label="Applications" title="Applications">
+              <FileText size={14} />
+            </button>
+          )}
           {!isHome && onOpenServerSettings && (
             <button onClick={onOpenServerSettings} className="theme-text-dim hover:text-primary transition-colors" aria-label="Server Settings">
               <Settings size={14} />
@@ -148,6 +164,7 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
               server?.categories.flatMap(c => c.channels).find(ch => ch.id === connectedVoiceChannelId)?.name || 'Voice'
             }
             onDisconnect={() => onJoinVoice('')}
+            onOpenActivities={onOpenActivities}
           />
           {useFeature('voiceTextChat') && (
             <VoiceTextChat

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion, FullScreenOverlay, ModalOverlay } from '@/lib/animations';
 import { ServerRail } from '@/components/ServerRail';
 import { ChannelRail } from '@/components/ChannelRail';
@@ -61,6 +61,23 @@ export const Layout: React.FC = () => {
 
   const [channelListHovered, setChannelListHovered] = useState(false);
   const [memberListHovered, setMemberListHovered] = useState(false);
+  const channelHoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const memberHoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleChannelEnter = useCallback(() => {
+    if (channelHoverTimer.current) clearTimeout(channelHoverTimer.current);
+    if (state.channelListCollapsed && !isMobile) setChannelListHovered(true);
+  }, [state.channelListCollapsed, isMobile]);
+  const handleChannelLeave = useCallback(() => {
+    channelHoverTimer.current = setTimeout(() => setChannelListHovered(false), 200);
+  }, []);
+  const handleMemberEnter = useCallback(() => {
+    if (memberHoverTimer.current) clearTimeout(memberHoverTimer.current);
+    if (state.memberListCollapsed && !isMobile) setMemberListHovered(true);
+  }, [state.memberListCollapsed, isMobile]);
+  const handleMemberLeave = useCallback(() => {
+    memberHoverTimer.current = setTimeout(() => setMemberListHovered(false), 200);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -230,8 +247,8 @@ export const Layout: React.FC = () => {
                         ${!isMobile && (state.channelListCollapsed && !channelListHovered) ? 'w-[10px] pointer-events-auto' : ''}
                         ${!isMobile && (!state.channelListCollapsed || channelListHovered) ? 'w-[224px] pointer-events-auto' : ''}
                     `}
-                    onMouseEnter={() => { if (state.channelListCollapsed && !isMobile) setChannelListHovered(true); }}
-                    onMouseLeave={() => setChannelListHovered(false)}
+                    onMouseEnter={handleChannelEnter}
+                    onMouseLeave={handleChannelLeave}
                 >
                     <ChannelRail 
                         server={activeServer}
@@ -297,8 +314,8 @@ export const Layout: React.FC = () => {
                                  ${!isMobile && (state.memberListCollapsed && !memberListHovered) ? 'w-[10px] pointer-events-auto' : ''}
                                  ${!isMobile && (!state.memberListCollapsed || memberListHovered) ? 'w-[224px] pointer-events-auto' : ''}
                                `}
-                               onMouseEnter={() => { if (state.memberListCollapsed && !isMobile) setMemberListHovered(true); }}
-                               onMouseLeave={() => setMemberListHovered(false)}
+                               onMouseEnter={handleMemberEnter}
+                               onMouseLeave={handleMemberLeave}
                              >
                                <MemberSidebar 
                                  members={activeServer!.members} 

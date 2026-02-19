@@ -100,11 +100,18 @@ const UsernameDisplay = ({ user, compact = false }: { user: User, compact?: bool
 // User popup sub-component for member details
 const UserPopup = ({ user, children }: { user: User, children?: React.ReactNode }) => {
     const [open, setOpen] = useState(false);
+    const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
+    const handleLeave = () => { closeTimer.current = setTimeout(() => setOpen(false), 200); };
     return (
-        <div className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+        <div className="relative" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
             {children}
             {open && (
-                <div className="absolute top-0 left-14 w-[230px] bg-bg-0 border border-white/10 rounded-r2 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-[100] glass-card overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div
+                    className="absolute top-0 left-14 w-[230px] bg-bg-0 border border-white/10 rounded-r2 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-[100] glass-card overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                    onMouseEnter={handleEnter}
+                    onMouseLeave={handleLeave}
+                >
                     <div className="h-16 bg-gradient-to-r from-primary/30 to-accent-purple/30 relative">
                         <div className="absolute inset-0 grid-overlay opacity-20"></div>
                     </div>

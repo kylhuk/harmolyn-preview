@@ -1,4 +1,4 @@
-<!-- Replace YOUR_ORG/YOUR_REPO and links. Keep badges that you actually support. -->
+<!-- Replace kylhuk/YOUR_REPO and links. Keep badges that you actually support. -->
 
 <p align="center">
   <img src="assets/harmolyn-banner.png" alt="Harmolyn" width="900" />
@@ -11,12 +11,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/YOUR_ORG/harmolyn/releases"><img alt="Release" src="https://img.shields.io/github/v/release/YOUR_ORG/harmolyn?display_name=tag&sort=semver"></a>
-  <a href="https://github.com/YOUR_ORG/harmolyn/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/YOUR_ORG/harmolyn/total"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/YOUR_ORG/harmolyn"></a>
-  <a href="https://github.com/YOUR_ORG/harmolyn/actions"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/YOUR_ORG/harmolyn/ci.yml"></a>
-  <a href="https://github.com/YOUR_ORG/harmolyn/security/policy"><img alt="Security Policy" src="https://img.shields.io/badge/security-policy-blue"></a>
-  <a href="https://securityscorecards.dev/viewer/?uri=github.com/YOUR_ORG/harmolyn"><img alt="OpenSSF Scorecard" src="https://img.shields.io/ossf-scorecard/github.com/YOUR_ORG/harmolyn?label=OpenSSF%20Scorecard"></a>
+  <a href="https://github.com/kylhuk/harmolyn/releases"><img alt="Release" src="https://img.shields.io/github/v/release/kylhuk/harmolyn?display_name=tag&sort=semver"></a>
+  <a href="https://github.com/kylhuk/harmolyn/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/kylhuk/harmolyn/total"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/kylhuk/harmolyn"></a>
+  <a href="https://github.com/kylhuk/harmolyn/actions"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/kylhuk/harmolyn/ci.yml"></a>
+  <a href="https://github.com/kylhuk/harmolyn/security/policy"><img alt="Security Policy" src="https://img.shields.io/badge/security-policy-blue"></a>
+  <a href="https://securityscorecards.dev/viewer/?uri=github.com/kylhuk/harmolyn"><img alt="OpenSSF Scorecard" src="https://img.shields.io/ossf-scorecard/github.com/kylhuk/harmolyn?label=OpenSSF%20Scorecard"></a>
 </p>
 
 <p align="center">
@@ -52,7 +52,7 @@ Harmolyn trades a few “normal app conveniences” for stronger security:
 ## Install
 
 Download the latest release from:
-- **Releases:** https://github.com/YOUR_ORG/harmolyn/releases
+- **Releases:** https://github.com/kylhuk/harmolyn/releases
 
 Recommended: verify the download (signatures/checksums) if you care about supply-chain integrity.
 

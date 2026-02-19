@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
-import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Settings, Video, MonitorUp, Signal } from 'lucide-react';
+import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Settings, Video, MonitorUp, Signal, Gamepad2 } from 'lucide-react';
 
 interface VoiceControlBarProps {
   channelName: string;
   onDisconnect: () => void;
+  onOpenActivities?: () => void;
 }
 
-export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({ channelName, onDisconnect }) => {
+export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({ channelName, onDisconnect, onOpenActivities }) => {
   const [muted, setMuted] = useState(false);
   const [deafened, setDeafened] = useState(false);
   const [videoOn, setVideoOn] = useState(false);
@@ -57,6 +58,14 @@ export const VoiceControlBar: React.FC<VoiceControlBarProps> = ({ channelName, o
             label="Screen Share"
             onClick={() => {}}
           />
+          {onOpenActivities && (
+            <ControlButton
+              active={false}
+              icon={<Gamepad2 size={16} />}
+              label="Activities"
+              onClick={onOpenActivities}
+            />
+          )}
         </div>
 
         <div className="flex items-center gap-1">

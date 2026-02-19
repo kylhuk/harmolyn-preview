@@ -234,6 +234,9 @@ export const Layout: React.FC = () => {
                         onJoinVoice={handleJoinVoice}
                         onOpenSettings={() => setState(s => ({...s, showSettings: true}))}
                         onOpenServerSettings={!isHome && activeServer ? () => setState(s => ({...s, viewMode: 'server-settings'})) : undefined}
+                        onOpenBoost={!isHome && activeServer ? () => setState(s => ({...s, showBoost: true})) : undefined}
+                        onOpenApplications={!isHome && activeServer ? () => setState(s => ({...s, showApplications: true})) : undefined}
+                        onOpenActivities={() => setState(s => ({...s, showActivities: true}))}
                         isHome={isHome}
                     />
                     {isMobile && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10" onClick={() => setState(s => ({...s, mobileMenuOpen: false}))}></div>}

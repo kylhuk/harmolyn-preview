@@ -13,7 +13,7 @@ export const FEATURES = {
   mobileBottomNav: true,
   contextMenus: true,
   quickSwitcher: true,
-  serverFolders: false,
+  serverFolders: true,
 
   // ─── Auth ────────────────────────────────────────────────
   loginScreen: true,
@@ -46,7 +46,7 @@ export const FEATURES = {
   voiceMessages: true,
   slashCommands: true,
   messageLinks: true,
-  superReactions: false,
+  superReactions: true,
   slowmode: true,
   jumpToPresent: true,
   unreadDivider: true,
@@ -56,7 +56,7 @@ export const FEATURES = {
 
   // ─── Voice & Video ───────────────────────────────────────
   voiceJoinLeave: true,
-  screenShare: false,
+  screenShare: true,
   soundboard: true,
   activities: true,
   dmCalls: true,
@@ -70,7 +70,7 @@ export const FEATURES = {
   forumChannels: true,
   announcementChannels: true,
   privateChannels: true,
-  channelFollowing: false,
+  channelFollowing: true,
   scheduledEvents: true,
   channelCreationFlow: true,
   channelPinsView: true,
@@ -83,12 +83,12 @@ export const FEATURES = {
   serverBoost: true,
   serverApplications: true,
   joinViaInvite: true,
-  vanityUrls: false,
+  vanityUrls: true,
 
   // ─── Community ───────────────────────────────────────────
-  communityOnboarding: false,
-  serverGuide: false,
-  browseChannels: false,
+  communityOnboarding: true,
+  serverGuide: true,
+  browseChannels: true,
   discoverTab: true,
 
   // ─── Direct Messages ─────────────────────────────────────
@@ -99,13 +99,13 @@ export const FEATURES = {
   autoMod: true,
   auditLog: true,
   timeout: true,
-  roleHierarchyDragDrop: false,
-  duplicateChannel: false,
+  roleHierarchyDragDrop: true,
+  duplicateChannel: true,
 
   // ─── Search & Navigation ─────────────────────────────────
   advancedSearch: true,
   inbox: true,
-  searchShortcuts: false,
+  searchShortcuts: true,
 
   // ─── Settings ────────────────────────────────────────────
   themeSelection: true,
@@ -114,15 +114,15 @@ export const FEATURES = {
   notificationSettings: true,
 
   // ─── Notifications ───────────────────────────────────────
-  desktopNotifications: false,
-  muteChannel: false,
+  desktopNotifications: true,
+  muteChannel: true,
   roleMentionSuppression: true,
 
   // ─── Monetization ────────────────────────────────────────
   nitro: true,
   shop: true,
   quests: true,
-  serverTags: false,
+  serverTags: true,
 
   // ─── Other Implemented ───────────────────────────────────
   memberListPanel: true,

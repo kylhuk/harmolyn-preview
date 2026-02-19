@@ -52,7 +52,7 @@ export const FEATURES = {
   unreadDivider: true,
   imageLightbox: true,
   deleteConfirmation: true,
-  mentionAutocomplete: false,
+  mentionAutocomplete: true,
 
   // ─── Voice & Video ───────────────────────────────────────
   voiceJoinLeave: true,
@@ -71,7 +71,7 @@ export const FEATURES = {
   announcementChannels: false,
   privateChannels: true,
   channelFollowing: false,
-  scheduledEvents: false,
+  scheduledEvents: true,
   channelCreationFlow: true,
   channelPinsView: false,
 
@@ -109,9 +109,9 @@ export const FEATURES = {
 
   // ─── Settings ────────────────────────────────────────────
   themeSelection: true,
-  accessibilitySettings: false,
-  keyboardShortcuts: false,
-  notificationSettings: false,
+  accessibilitySettings: true,
+  keyboardShortcuts: true,
+  notificationSettings: true,
 
   // ─── Notifications ───────────────────────────────────────
   desktopNotifications: false,

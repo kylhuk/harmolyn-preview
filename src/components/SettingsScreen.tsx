@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, User, Shield, Key, Bell, Monitor, LogOut, ChevronRight, Smartphone, Lock, Fingerprint, QrCode } from 'lucide-react';
+import { X, User, Shield, Key, Bell, Monitor, LogOut, ChevronRight, Smartphone, Lock, Fingerprint, QrCode, Eye, Command, Accessibility } from 'lucide-react';
 import { User as UserType } from '@/types';
+import { NotificationSettings } from '@/components/NotificationSettings';
+import { useFeature } from '@/hooks/useFeature';
 
 interface SettingsScreenProps {
   user: UserType;
@@ -24,7 +26,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose })
              <div className="h-6"></div>
              <div className="micro-label text-white/20 px-3 mb-3">System configuration</div>
              <SettingsItem icon={<Monitor size={16} />} label="Core Appearance" active={activeSection === 'appearance'} onClick={() => setActiveSection('appearance')} />
-             <SettingsItem icon={<Bell size={16} />} label="Signal Alerts" active={activeSection === 'alerts'} onClick={() => setActiveSection('alerts')} />
+             <SettingsItem icon={<Bell size={16} />} label="Signal Alerts" active={activeSection === 'notifications'} onClick={() => setActiveSection('notifications')} />
+             <SettingsItem icon={<Accessibility size={16} />} label="Accessibility" active={activeSection === 'accessibility'} onClick={() => setActiveSection('accessibility')} />
              <SettingsItem icon={<Smartphone size={16} />} label="Mobile Sync" active={activeSection === 'mobile'} onClick={() => setActiveSection('mobile')} />
              
              <div className="h-6"></div>
@@ -41,6 +44,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose })
           <div className="max-w-[640px] mx-auto py-12 px-6 md:px-10">
               {activeSection === 'account' && <AccountSection user={user} />}
               {activeSection === 'mfa' && <MFASection />}
+              {activeSection === 'notifications' && <NotificationSettings />}
+              {activeSection === 'accessibility' && <AccessibilitySection />}
           </div>
       </div>
 
@@ -220,6 +225,79 @@ const MFASection: React.FC = () => {
             </button>
           </div>
         </div>
+      </div>
+    </>
+  );
+};
+
+const AccessibilitySection: React.FC = () => {
+  const [highContrast, setHighContrast] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [fontSize, setFontSize] = useState<'small' | 'default' | 'large' | 'xlarge'>('default');
+  const [saturation, setSaturation] = useState(100);
+
+  const fontSizes = [
+    { key: 'small' as const, label: 'SMALL', size: '13px' },
+    { key: 'default' as const, label: 'DEFAULT', size: '15px' },
+    { key: 'large' as const, label: 'LARGE', size: '17px' },
+    { key: 'xlarge' as const, label: 'X-LARGE', size: '19px' },
+  ];
+
+  return (
+    <>
+      <header className="mb-10">
+        <h2 className="text-[26px] font-bold text-white mb-2 font-display tracking-tight">ACCESSIBILITY</h2>
+        <p className="micro-label text-white/30">VISUAL // MOTION // INTERFACE // SETTINGS</p>
+      </header>
+
+      <div className="space-y-6">
+        <section>
+          <h3 className="micro-label text-white/40 border-b border-white/5 pb-2 mb-4">VISUAL</h3>
+          <div className="space-y-3">
+            <div className="glass-card rounded-r2 p-4 border border-white/10 flex items-center justify-between">
+              <div>
+                <div className="text-white font-bold text-sm">High Contrast Mode</div>
+                <div className="text-[10px] text-white/40">Increase contrast for better visibility</div>
+              </div>
+              <button onClick={() => setHighContrast(!highContrast)} className={`w-11 h-6 rounded-full transition-all relative ${highContrast ? 'bg-primary/30' : 'bg-white/10'}`}>
+                <div className={`w-5 h-5 rounded-full absolute top-0.5 transition-all ${highContrast ? 'left-[22px] bg-primary' : 'left-0.5 bg-white/35'}`} />
+              </button>
+            </div>
+
+            <div className="glass-card rounded-r2 p-4 border border-white/10">
+              <div className="mb-3">
+                <div className="text-white font-bold text-sm">Color Saturation</div>
+                <div className="text-[10px] text-white/40">Adjust color intensity ({saturation}%)</div>
+              </div>
+              <input type="range" min={0} max={200} value={saturation} onChange={e => setSaturation(Number(e.target.value))} className="w-full accent-primary" />
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="micro-label text-white/40 border-b border-white/5 pb-2 mb-4">MOTION</h3>
+          <div className="glass-card rounded-r2 p-4 border border-white/10 flex items-center justify-between">
+            <div>
+              <div className="text-white font-bold text-sm">Reduce Motion</div>
+              <div className="text-[10px] text-white/40">Minimize animations and transitions</div>
+            </div>
+            <button onClick={() => setReducedMotion(!reducedMotion)} className={`w-11 h-6 rounded-full transition-all relative ${reducedMotion ? 'bg-primary/30' : 'bg-white/10'}`}>
+              <div className={`w-5 h-5 rounded-full absolute top-0.5 transition-all ${reducedMotion ? 'left-[22px] bg-primary' : 'left-0.5 bg-white/35'}`} />
+            </button>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="micro-label text-white/40 border-b border-white/5 pb-2 mb-4">FONT SIZE</h3>
+          <div className="flex gap-2">
+            {fontSizes.map(fs => (
+              <button key={fs.key} onClick={() => setFontSize(fs.key)} className={`flex-1 py-3 rounded-r2 text-center border transition-all ${fontSize === fs.key ? 'bg-primary/10 border-primary/20 text-primary' : 'border-white/5 text-white/40 hover:bg-white/5'}`}>
+                <div className="font-bold" style={{ fontSize: fs.size }}>Aa</div>
+                <div className="micro-label mt-1">{fs.label}</div>
+              </button>
+            ))}
+          </div>
+        </section>
       </div>
     </>
   );

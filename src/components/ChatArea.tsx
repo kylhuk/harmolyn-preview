@@ -2,7 +2,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Channel, Message, User, MessageLayout } from '@/types';
 import { generateTheme } from '@/utils/themeGenerator';
-import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight } from 'lucide-react';
+import { renderMarkdown } from '@/utils/markdown';
+import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check } from 'lucide-react';
 
 // Action button sub-component for message interactions
 const ActionBtn = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) => (
@@ -158,6 +159,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showThemeSettings, setShowThemeSettings] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const [messagesState, setMessagesState] = useState<Message[]>(messages);
   const [mutedUsers, setMutedUsers] = useState<Set<string>>(new Set());
@@ -249,6 +252,27 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   const deleteMessage = (msgId: string) => {
     setMessagesState(prev => prev.filter(m => m.id !== msgId));
+  };
+
+  const startEdit = (msg: Message) => {
+    setEditingMsgId(msg.id);
+    setEditValue(msg.content);
+  };
+
+  const saveEdit = () => {
+    if (!editingMsgId || !editValue.trim()) return;
+    setMessagesState(prev => prev.map(m => 
+      m.id === editingMsgId 
+        ? { ...m, content: editValue, editedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) } 
+        : m
+    ));
+    setEditingMsgId(null);
+    setEditValue('');
+  };
+
+  const cancelEdit = () => {
+    setEditingMsgId(null);
+    setEditValue('');
   };
 
   useEffect(() => {
@@ -456,7 +480,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           const user = getUser(msg.userId);
           const isSpecial = user.role === 'Admin' || user.role === 'Moderator';
           const isMe = msg.userId === 'me';
-          const displayContent = highlightText(msg.content, searchQuery);
+          const displayContent = searchQuery ? highlightText(msg.content, searchQuery) : renderMarkdown(msg.content);
           const replyMsg = msg.replyToId ? messagesState.find(m => m.id === msg.replyToId) : null;
           const replyUser = replyMsg ? getUser(replyMsg.userId) : null;
 
@@ -470,7 +494,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                  >
                      <span className="text-white/40 text-[10px] font-mono select-none">[{msg.timestamp}]</span>
                      <span className="font-bold whitespace-nowrap" style={{ color: user.color }}>&lt;{user.username}&gt;</span>
-                     <span className="text-white/90 break-words">{displayContent}</span>
+                     <span className="text-white/90 break-words">{displayContent}{msg.editedAt && <span className="text-white/20 text-[9px] ml-1">(edited)</span>}</span>
                  </div>
              )
           }
@@ -505,7 +529,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                   : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl rounded-tl-sm backdrop-blur-sm'
                               }`}
                           >
-                             {displayContent}
+                             {editingMsgId === msg.id ? (
+                               <div className="flex flex-col gap-2">
+                                 <input
+                                   type="text"
+                                   value={editValue}
+                                   onChange={(e) => setEditValue(e.target.value)}
+                                   onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); }}
+                                   className="bg-white/10 border border-white/20 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-primary/50"
+                                   autoFocus
+                                 />
+                                 <div className="flex gap-2 text-[10px]">
+                                   <button onClick={saveEdit} className="text-primary hover:underline">save</button>
+                                   <button onClick={cancelEdit} className="text-white/40 hover:underline">cancel</button>
+                                 </div>
+                               </div>
+                             ) : (
+                               <>{displayContent}{msg.editedAt && <span className={`text-[9px] ml-1 ${isMe ? 'text-bg-0/50' : 'text-white/20'}`}>(edited)</span>}</>
+                             )}
                              <div className={`text-[9px] text-right mt-1.5 font-mono transition-opacity duration-300 ${isMe ? 'text-bg-0/70' : 'text-white/30'} ${hoveredMessageId === msg.id ? 'opacity-60' : 'opacity-0'}`}>
                                 {msg.timestamp}
                              </div>
@@ -524,7 +565,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                        {hoveredMessageId === msg.id && (
                            <div className={`absolute top-0 ${isMe ? 'left-auto right-[calc(100%+8px)]' : 'left-[calc(100%+8px)]'} glass-panel border border-white/10 rounded-full px-1.5 py-1 flex items-center gap-1 shadow-xl animate-in fade-in zoom-in-95 z-10`}>
                                <ActionBtn icon={<Smile size={16} />} label="Add Reaction" onClick={() => setReactionMenuMsgId(msg.id)} />
-                                <ActionBtn icon={<MessageSquare size={16} />} label="Reply" onClick={() => setReplyingTo(msg)} />
+                                 <ActionBtn icon={<MessageSquare size={16} />} label="Reply" onClick={() => setReplyingTo(msg)} />
+                               {isMe && <ActionBtn icon={<Pencil size={16} />} label="Edit Message" onClick={() => startEdit(msg)} />}
                                <ActionBtn icon={<Trash2 size={16} />} label="Delete Message" onClick={() => deleteMessage(msg.id)} />
                                <ActionBtn 
                                  icon={<MicOff size={16} className={mutedUsers.has(msg.userId) ? "text-accent-danger" : ""} />} 
@@ -560,6 +602,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 onMouseEnter={() => setHoveredMessageId(msg.id)}
                 onMouseLeave={() => setHoveredMessageId(null)}
                 onContextMenu={(e) => handleContextMenu(e, msg.id)}
+                onDoubleClick={() => { if (isMe) startEdit(msg); }}
                 className={`flex gap-6 group relative p-3 -mx-3 rounded-r1 transition-all hover:bg-white/[0.03] ${isSpecial ? 'bg-gradient-to-r from-primary/5 to-transparent border-l-2 border-primary/20' : ''}`}
             >
               {isSpecial && <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-primary rounded-full shadow-glow"></div>}
@@ -591,7 +634,27 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     </span>
                   </span>
                 </div>
-                <div className="theme-text-secondary leading-relaxed font-chat font-light text-[18px] selection:bg-primary selection:text-bg-0 tracking-wide break-words">{displayContent}</div>
+                {editingMsgId === msg.id ? (
+                  <div className="flex flex-col gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') cancelEdit(); }}
+                      className="bg-white/5 border border-white/10 rounded-r1 px-4 py-2 text-[16px] text-white font-chat focus:outline-none focus:border-primary/50 w-full"
+                      autoFocus
+                    />
+                    <div className="flex gap-3 text-[11px]">
+                      <span className="text-white/30">escape to <button onClick={cancelEdit} className="text-primary hover:underline">cancel</button></span>
+                      <span className="text-white/30">enter to <button onClick={saveEdit} className="text-primary hover:underline">save</button></span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="theme-text-secondary leading-relaxed font-chat font-light text-[18px] selection:bg-primary selection:text-bg-0 tracking-wide break-words">
+                    {displayContent}
+                    {msg.editedAt && <span className="text-white/20 text-[10px] ml-1.5">(edited)</span>}
+                  </div>
+                )}
                 
                 {msg.reactions && msg.reactions.length > 0 && (
                     <div className="flex gap-2 mt-4 flex-wrap">
@@ -606,6 +669,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   <div className="absolute -top-5 right-8 glass-panel border border-white/10 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl animate-in fade-in zoom-in-95 z-10">
                       <ActionBtn icon={<Smile size={16} />} label="Add Reaction" onClick={() => setReactionMenuMsgId(msg.id)} />
                       <ActionBtn icon={<MessageSquare size={16} />} label="Reply" onClick={() => setReplyingTo(msg)} />
+                      {isMe && <ActionBtn icon={<Pencil size={16} />} label="Edit Message" onClick={() => startEdit(msg)} />}
                       <ActionBtn icon={<Pin size={16} />} label="Pin Message" />
                       <ActionBtn icon={<Trash2 size={16} />} label="Delete Message" onClick={() => deleteMessage(msg.id)} />
                       <ActionBtn 
@@ -658,6 +722,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-r1 text-white text-sm flex items-center gap-2 transition-colors">
                     <Smile size={14} className="text-white/40" /> Add Reaction
                 </button>
+                {messagesState.find(m => m.id === contextMenu.msgId)?.userId === 'me' && (
+                  <button 
+                    onClick={() => {
+                      const msg = messagesState.find(m => m.id === contextMenu.msgId);
+                      if (msg) { startEdit(msg); setContextMenu(null); }
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-r1 text-white text-sm flex items-center gap-2 transition-colors"
+                  >
+                    <Pencil size={14} className="text-white/40" /> Edit Message
+                  </button>
+                )}
                 <div className="h-[1px] bg-white/5 my-1"></div>
                 <button 
                     onClick={() => {

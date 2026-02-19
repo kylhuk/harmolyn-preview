@@ -1,25 +1,61 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="dark">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Harmolyn</title>
-    <meta name="description" content="Harmolyn" />
-    <meta name="author" content="Harmolyn" />
-
-    <meta property="og:title" content="Harmolyn" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-  </head>
-
-  <body>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Nexus // Aether Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Roboto:wght@300;400;500;700;900&family=Space+Mono&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Lato', 'sans-serif'],
+              mono: ['Space Mono', 'monospace'],
+              chat: ['Roboto', 'sans-serif'],
+              display: ['Roboto', 'sans-serif'],
+            },
+            colors: {
+              bg: {
+                0: '#050A0B',
+                1: '#0A1214',
+                2: '#102022',
+              },
+              primary: {
+                DEFAULT: '#13DDEC',
+                dark: '#0BBDC9',
+                dim: '#0A7A85',
+                glow: 'rgba(19, 221, 236, 0.5)',
+              },
+              accent: {
+                success: '#05FFA1',
+                danger: '#FF2A6D',
+                warning: '#FFB020',
+                purple: '#A855F7',
+              },
+              glass: {
+                card: 'rgba(17, 23, 24, 0.70)',
+                panel: 'rgba(16, 25, 27, 0.65)',
+                overlay: 'rgba(255, 255, 255, 0.03)',
+              }
+            },
+            borderRadius: {
+              'r1': '16px',
+              'r2': '32px',
+              'r3': '48px',
+              'r4': '64px',
+            }
+          }
+        }
+      }
+    </script>
+</head>
+  <body class="overflow-hidden select-none">
+    <div class="fixed inset-0 grid-overlay z-[-1]"></div>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <script type="module" src="index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>

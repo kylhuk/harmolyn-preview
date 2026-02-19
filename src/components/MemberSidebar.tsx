@@ -26,10 +26,8 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed
     }
   };
 
-  if (collapsed) return null;
-
   return (
-    <div className={`w-[280px] glass-realistic flex flex-col h-full ${isOverlay ? 'shadow-2xl' : ''} animate-in fade-in duration-200`}>
+    <div className={`w-[280px] glass-realistic flex flex-col h-full ${isOverlay ? 'shadow-2xl' : ''}`}>
       <div className="h-16 px-6 flex items-center justify-between border-b theme-border">
         <span className="micro-label theme-text-dim">Entities</span>
         <button onClick={onToggleCollapse} className="theme-text-dim hover:text-primary"><PanelRightClose size={18} /></button>

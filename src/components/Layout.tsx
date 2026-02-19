@@ -119,13 +119,8 @@ export const Layout: React.FC = () => {
   const showMemberSidebar = !isDM && activeServer && !isExplore;
   const isOverlaySidebar = isMobile || isTablet;
 
-  const isChannelExpanded = !state.channelListCollapsed || channelListHovered;
-  const isChannelOverlay = !isMobile && state.channelListCollapsed && channelListHovered;
-  
-  // memberListHovered is used only on desktop for hover-to-peek
-
   return (
-    <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={{ ...themeStyle, zoom: 0.8 }}>
+    <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
       {state.showSettings && <SettingsScreen user={CURRENT_USER} onClose={() => setState(s => ({...s, showSettings: false}))} />}
       {state.viewMode === 'server-settings' && activeServer && (
         <ServerSettingsScreen server={activeServer} onClose={() => setState(s => ({...s, viewMode: 'chat'}))} />
@@ -149,15 +144,15 @@ export const Layout: React.FC = () => {
           {!isExplore && (!isMobile || state.mobileMenuOpen) && (
             <>
                 {/* Spacer: reserves layout space when expanded on desktop */}
-                <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.channelListCollapsed && !isMobile ? 'w-[280px]' : 'w-0'}`}></div>
+                <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.channelListCollapsed && !isMobile ? 'w-[224px]' : 'w-0'}`}></div>
 
-                {/* Always-present wrapper — pointer-events control prevents invisible blocking */}
+                {/* Always-present wrapper */}
                 <div 
                     className={`
                         absolute left-0 top-0 bottom-0 z-40 h-full
-                        ${isMobile ? 'z-[60] w-[280px] pointer-events-auto' : ''}
-                        ${!isMobile && (state.channelListCollapsed && !channelListHovered) ? 'w-[12px] pointer-events-auto' : ''}
-                        ${!isMobile && (!state.channelListCollapsed || channelListHovered) ? 'w-[280px] pointer-events-auto' : ''}
+                        ${isMobile ? 'z-[60] w-[224px] pointer-events-auto' : ''}
+                        ${!isMobile && (state.channelListCollapsed && !channelListHovered) ? 'w-[10px] pointer-events-auto' : ''}
+                        ${!isMobile && (!state.channelListCollapsed || channelListHovered) ? 'w-[224px] pointer-events-auto' : ''}
                     `}
                     onMouseEnter={() => { if (state.channelListCollapsed && !isMobile) setChannelListHovered(true); }}
                     onMouseLeave={() => setChannelListHovered(false)}
@@ -205,7 +200,7 @@ export const Layout: React.FC = () => {
                          {showMemberSidebar && (
                            <>
                              {/* Spacer: full width when expanded on desktop */}
-                             <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isOverlaySidebar ? 'w-[280px]' : 'w-0'}`}></div>
+                             <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isOverlaySidebar ? 'w-[224px]' : 'w-0'}`}></div>
 
                              {/* Overlay backdrop + sidebar for tablet/mobile */}
                              {isOverlaySidebar && !state.memberListCollapsed && (
@@ -214,7 +209,7 @@ export const Layout: React.FC = () => {
                                    className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 animate-in fade-in"
                                    onClick={() => setState(s => ({...s, memberListCollapsed: true}))}
                                  ></div>
-                                 <div className="absolute right-0 top-0 bottom-0 z-40 h-full w-[280px]">
+                                 <div className="absolute right-0 top-0 bottom-0 z-40 h-full w-[224px]">
                                    <MemberSidebar 
                                      members={activeServer!.members} 
                                      collapsed={false}
@@ -232,36 +227,36 @@ export const Layout: React.FC = () => {
 
             {/* Bottom Dock for Mobile Views */}
             {isMobile && (
-              <div className="h-[88px] w-full glass-panel flex items-center justify-around px-4 border-t border-white/5 pb-safe z-50 relative">
-                 <BottomNavItem active={isHome} onClick={() => handleServerSelect('home')} icon={<Home size={24} />} label="HOME" />
-                 <BottomNavItem active={!isHome && !isExplore} onClick={() => setState(s => ({...s, mobileMenuOpen: true}))} icon={<Menu size={24} />} label="CHANNELS" />
-                 <BottomNavItem active={false} onClick={() => setState(s => ({...s, showCreateServer: true}))} icon={<div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-bg-0 shadow-glow -mt-6"><UsersIcon size={24} /></div>} label="CREATE" isCore />
-                 <BottomNavItem active={isExplore} onClick={() => handleServerSelect('explore')} icon={<Compass size={24} />} label="EXPLORE" />
-                 <BottomNavItem active={false} onClick={() => setState(s => ({...s, showSettings: true}))} icon={<SettingsIcon size={24} />} label="SETTINGS" />
+              <div className="h-[70px] w-full glass-panel flex items-center justify-around px-3 border-t border-white/5 pb-safe z-50 relative">
+                 <BottomNavItem active={isHome} onClick={() => handleServerSelect('home')} icon={<Home size={20} />} label="HOME" />
+                 <BottomNavItem active={!isHome && !isExplore} onClick={() => setState(s => ({...s, mobileMenuOpen: true}))} icon={<Menu size={20} />} label="CHANNELS" />
+                 <BottomNavItem active={false} onClick={() => setState(s => ({...s, showCreateServer: true}))} icon={<div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-bg-0 shadow-glow -mt-5"><UsersIcon size={20} /></div>} label="CREATE" isCore />
+                 <BottomNavItem active={isExplore} onClick={() => handleServerSelect('explore')} icon={<Compass size={20} />} label="EXPLORE" />
+                 <BottomNavItem active={false} onClick={() => setState(s => ({...s, showSettings: true}))} icon={<SettingsIcon size={20} />} label="SETTINGS" />
               </div>
             )}
           </div>
       </div>
 
-      {/* Member sidebar — single always-rendered wrapper at root to avoid overflow clipping */}
+      {/* Member sidebar — desktop hover-to-peek at root level */}
       {showMemberSidebar && !isOverlaySidebar && (
         <div 
           className={`absolute right-0 top-0 bottom-0 z-[55] transition-all duration-300 ease-in-out ${
             state.memberListCollapsed && !memberListHovered 
-              ? 'w-[16px] pointer-events-auto cursor-pointer' 
-              : 'w-[280px] pointer-events-auto'
+              ? 'w-[12px] pointer-events-auto cursor-pointer' 
+              : 'w-[224px] pointer-events-auto'
           }`}
           onMouseEnter={() => { if (state.memberListCollapsed) setMemberListHovered(true); }}
           onMouseLeave={() => setMemberListHovered(false)}
         >
-          {/* Thin trigger strip — visible only when fully collapsed */}
+          {/* Thin trigger strip */}
           <div className={`absolute inset-0 flex items-center justify-center border-l border-white/5 transition-opacity duration-200 ${
             state.memberListCollapsed && !memberListHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`} style={{ background: 'rgba(10,18,20,0.3)' }}>
-            <div className="w-1 h-8 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}></div>
+            <div className="w-1 h-6 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}></div>
           </div>
 
-          {/* Full sidebar panel — visible when expanded or hovered */}
+          {/* Full sidebar panel */}
           <div className={`h-full transition-opacity duration-200 ${
             state.memberListCollapsed && !memberListHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}>
@@ -281,11 +276,11 @@ export const Layout: React.FC = () => {
 const BottomNavItem = ({ active, onClick, icon, label, isCore = false }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, isCore?: boolean }) => (
     <div 
       onClick={onClick} 
-      className={`flex flex-col items-center gap-1 cursor-pointer transition-all ${active ? 'text-primary' : 'text-white/40'}`}
+      className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all ${active ? 'text-primary' : 'text-white/40'}`}
       role="button"
       aria-label={label}
     >
         <div className={`transition-transform ${active ? 'scale-110' : 'hover:scale-105'}`}>{icon}</div>
-        {!isCore && <span className="micro-label text-[8px] font-bold tracking-widest">{label}</span>}
+        {!isCore && <span className="micro-label text-[7px] font-bold tracking-widest">{label}</span>}
     </div>
 );

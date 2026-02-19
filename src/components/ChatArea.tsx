@@ -491,11 +491,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                  <div 
                     key={msg.id}
                     onContextMenu={(e) => handleContextMenu(e, msg.id)}
-                    className="flex items-baseline gap-2 text-sm hover:bg-white/5 px-2 -mx-2 py-0.5 rounded"
+                    className="flex text-sm hover:bg-white/5 px-2 -mx-2 py-0.5 rounded font-mono"
                  >
-                     <span className="text-white/40 text-[10px] font-mono select-none">[{msg.timestamp}]</span>
-                     <span className="font-bold whitespace-nowrap" style={{ color: user.color }}>&lt;{user.username}&gt;</span>
-                     <span className="text-white/90 break-words">{displayContent}{msg.editedAt && <span className="text-white/20 text-[9px] ml-1">(edited)</span>}</span>
+                     <span className="text-white/30 text-[11px] select-none whitespace-nowrap shrink-0 pt-[1px]">{msg.timestamp}&nbsp;</span>
+                     <div className="min-w-0">
+                       <span className="font-bold whitespace-nowrap" style={{ color: user.color }}>{user.username}</span>
+                       <span className="text-white/40">:&nbsp;</span>
+                       <span className="text-white/90 break-words">{displayContent}{msg.editedAt && <span className="text-white/20 text-[9px] ml-1">(edited)</span>}</span>
+                     </div>
                  </div>
              )
           }

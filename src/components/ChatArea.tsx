@@ -458,10 +458,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="absolute inset-0 grid-overlay opacity-30 z-[-1]"></div>
       
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 h-[52px] flex items-center justify-between px-3 md:px-6 border-b theme-border glass-realistic z-20">
+      <div className="absolute top-0 left-0 right-0 h-[52px] flex items-center justify-between px-3 lg:px-6 border-b theme-border glass-realistic z-20">
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <button onClick={onToggleMobileMenu} className="md:hidden text-primary/80 hover:text-primary transition-colors p-1" aria-label="Open Menu">
-            <Menu size={20} />
+          <button onClick={onToggleMobileMenu} className="lg:hidden text-primary/80 hover:text-primary transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Open Menu">
+            <Menu size={22} />
           </button>
           
           <div className="text-primary text-glow flex-shrink-0">
@@ -520,12 +520,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               <LayoutTemplate size={18} />
            </button>
 
-           {/* Member Toggle - Mobile Only */}
-           <button onClick={onToggleMemberList} className="md:hidden text-white/40 hover:text-primary transition-colors p-1.5" aria-label="Member List">
-               <Users size={18} />
+           {/* Member Toggle - Mobile & Tablet */}
+           <button onClick={onToggleMemberList} className="lg:hidden text-white/40 hover:text-primary transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label="Member List">
+               <Users size={20} />
            </button>
 
-          <div className="hidden md:flex items-center gap-4 text-white/40">
+          <div className="hidden lg:flex items-center gap-4 text-white/40">
              {hasInbox && (
                <button aria-label="Inbox" onClick={() => setShowInbox(!showInbox)} className={`transition-colors relative ${showInbox ? 'text-primary' : 'hover:text-primary'}`}>
                  <Inbox size={16} />

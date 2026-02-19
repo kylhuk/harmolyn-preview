@@ -82,4 +82,6 @@ export const MOCK_MESSAGES: Message[] = [
   { id: 'm10', userId: 'u2', content: 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.', timestamp: '10:30 AM' },
   { id: 'm11', userId: 'u1', content: 'Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.', timestamp: '10:31 AM' },
   { id: 'm12', userId: 'me', content: 'Deploying the patch now. Systems might flicker for a microsecond. Hold onto your connections.', timestamp: '10:44 AM' },
+  { id: 'm13', userId: 'u2', content: 'Check out this network topology map: https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&h=400&fit=crop', timestamp: '10:50 AM' },
+  { id: 'm14', userId: 'u1', content: 'Found this relevant briefing on the new protocol: https://github.com/harmolyn/docs', timestamp: '10:55 AM' },
 ];

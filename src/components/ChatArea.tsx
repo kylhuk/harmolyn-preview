@@ -5,7 +5,8 @@ import { generateTheme } from '@/utils/themeGenerator';
 import { renderMarkdown } from '@/utils/markdown';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import { TypingIndicator } from '@/components/TypingIndicator';
-import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check } from 'lucide-react';
+import { MediaEmbed } from '@/components/MediaEmbed';
+import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose } from 'lucide-react';
 
 // Action button sub-component for message interactions
 const ActionBtn = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) => (
@@ -256,6 +257,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     setMessagesState(prev => prev.filter(m => m.id !== msgId));
   };
 
+  const togglePin = (msgId: string) => {
+    setMessagesState(prev => prev.map(m => m.id === msgId ? { ...m, pinned: !m.pinned } : m));
+  };
+
   const startEdit = (msg: Message) => {
     setEditingMsgId(msg.id);
     setEditValue(msg.content);
@@ -421,22 +426,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
           <div className="hidden md:flex items-center gap-5 text-white/40">
              <button aria-label="Notifications" className="hover:text-primary transition-colors"><Bell size={18} /></button>
-             <div className="relative">
-                 <button aria-label="Pinned Messages" onClick={() => setShowPinned(!showPinned)} className={`transition-colors ${showPinned ? 'text-primary' : 'hover:text-primary'}`}><Pin size={18} /></button>
-                 {showPinned && (
-                     <div className="absolute top-10 right-0 w-80 bg-bg-0 border border-white/10 rounded-r2 p-6 shadow-2xl z-50 glass-card animate-in fade-in slide-in-from-top-2">
-                        <div className="micro-label text-primary mb-4 pb-2 border-b border-white/5">Pinned Nests</div>
-                        <div className="space-y-4 max-h-64 overflow-y-auto no-scrollbar">
-                            {messagesState.filter(m => m.pinned).map(m => (
-                                <div key={m.id} className="p-4 bg-white/5 rounded-r1 border border-white/5">
-                                    <div className="micro-label text-primary/60 mb-2">{getUser(m.userId).username}</div>
-                                    <div className="text-sm text-white/80 italic leading-relaxed">"{m.content}"</div>
-                                </div>
-                            ))}
-                        </div>
-                     </div>
-                 )}
-             </div>
+              <div className="relative">
+                 <button aria-label="Pinned Messages" onClick={() => setShowPinned(!showPinned)} className={`transition-colors relative ${showPinned ? 'text-primary' : 'hover:text-primary'}`}>
+                   <Pin size={18} />
+                   {messagesState.filter(m => m.pinned).length > 0 && (
+                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent-danger text-[8px] font-bold flex items-center justify-center text-white shadow-[0_0_6px_rgba(255,42,109,0.35)]">
+                       {messagesState.filter(m => m.pinned).length}
+                     </span>
+                   )}
+                 </button>
+              </div>
              <button aria-label="Member List" onClick={onToggleMemberList} className="hover:text-primary transition-colors"><Users size={18} /></button>
              <div className="relative group">
                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors" />
@@ -658,6 +657,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   </div>
                 )}
                 
+                {/* Media Embeds */}
+                <MediaEmbed content={msg.content} />
+                
                 {msg.reactions && msg.reactions.length > 0 && (
                     <div className="flex gap-2 mt-4 flex-wrap">
                         {msg.reactions.map((r, i) => (
@@ -672,7 +674,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       <ActionBtn icon={<Smile size={16} />} label="Add Reaction" onClick={() => setReactionMenuMsgId(msg.id)} />
                       <ActionBtn icon={<MessageSquare size={16} />} label="Reply" onClick={() => setReplyingTo(msg)} />
                       {isMe && <ActionBtn icon={<Pencil size={16} />} label="Edit Message" onClick={() => startEdit(msg)} />}
-                      <ActionBtn icon={<Pin size={16} />} label="Pin Message" />
+                      <ActionBtn icon={<Pin size={16} className={msg.pinned ? 'text-primary' : ''} />} label={msg.pinned ? 'Unpin' : 'Pin'} onClick={() => togglePin(msg.id)} />
                       <ActionBtn icon={<Trash2 size={16} />} label="Delete Message" onClick={() => deleteMessage(msg.id)} />
                       <ActionBtn 
                         icon={<MicOff size={16} className={mutedUsers.has(msg.userId) ? "text-accent-danger" : ""} />} 
@@ -702,6 +704,56 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         })}
       </div>
 
+      {/* Pinned Messages Drawer */}
+      {showPinned && (
+        <>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-30 animate-in fade-in" onClick={() => setShowPinned(false)} />
+          <div className="absolute top-0 right-0 bottom-0 w-[360px] max-w-full bg-bg-0 border-l border-white/10 z-40 flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl">
+            <div className="h-16 px-6 flex items-center justify-between border-b border-white/5 shrink-0">
+              <div>
+                <h3 className="font-bold text-white text-sm font-display">PINNED // MESSAGES</h3>
+                <span className="micro-label text-white/30 text-[9px]">ARCHIVE // {messagesState.filter(m => m.pinned).length} ENTRIES</span>
+              </div>
+              <button onClick={() => setShowPinned(false)} className="p-2 text-white/40 hover:text-primary transition-colors rounded-full hover:bg-white/5">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+              {messagesState.filter(m => m.pinned).length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center px-8">
+                  <Pin size={48} className="text-white/10 mb-4" />
+                  <p className="text-white/30 text-sm font-bold mb-1">No Pinned Messages</p>
+                  <p className="text-white/15 text-xs font-mono">PIN IMPORTANT MESSAGES TO KEEP THEM HERE</p>
+                </div>
+              ) : (
+                messagesState.filter(m => m.pinned).map(m => {
+                  const pinnedUser = getUser(m.userId);
+                  return (
+                    <div key={m.id} className="glass-card rounded-r1 border border-white/8 p-4 group hover:border-primary/20 transition-all">
+                      <div className="flex items-center gap-3 mb-3">
+                        <img src={pinnedUser.avatar} className="w-8 h-8 rounded-full border border-white/10" alt={pinnedUser.username} />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-bold" style={{ color: pinnedUser.color }}>{pinnedUser.username}</span>
+                          <span className="text-[10px] text-white/30 font-mono ml-2">{m.timestamp}</span>
+                        </div>
+                        <button 
+                          onClick={() => togglePin(m.id)}
+                          className="p-1.5 text-white/20 hover:text-accent-danger hover:bg-accent-danger/10 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                          aria-label="Unpin"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <div className="text-sm text-white/70 leading-relaxed">{renderMarkdown(m.content)}</div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Context Menu */}
       {contextMenu && (
         <div 
@@ -718,8 +770,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 >
                     <MessageSquare size={14} className="text-white/40" /> Reply
                 </button>
-                <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-r1 text-white text-sm flex items-center gap-2 transition-colors">
-                    <Pin size={14} className="text-white/40" /> Pin Message
+                <button 
+                    onClick={() => { const msg = messagesState.find(m => m.id === contextMenu.msgId); if (msg) { togglePin(msg.id); setContextMenu(null); } }}
+                    className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-r1 text-white text-sm flex items-center gap-2 transition-colors"
+                >
+                    <Pin size={14} className="text-white/40" /> {messagesState.find(m => m.id === contextMenu.msgId)?.pinned ? 'Unpin Message' : 'Pin Message'}
                 </button>
                 <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-r1 text-white text-sm flex items-center gap-2 transition-colors">
                     <Smile size={14} className="text-white/40" /> Add Reaction

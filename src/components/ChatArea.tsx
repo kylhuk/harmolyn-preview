@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Channel, Message, User, MessageLayout } from '@/types';
 import { generateTheme } from '@/utils/themeGenerator';
 import { renderMarkdown } from '@/utils/markdown';
+import { EmojiPicker } from '@/components/EmojiPicker';
 import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check } from 'lucide-react';
 
 // Action button sub-component for message interactions
@@ -802,9 +803,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 <button className="p-2.5 text-white/40 hover:text-primary transition-all" aria-label="Stickers"><Sticker size={22} /></button>
                 <div className="relative">
                     <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-2.5 transition-all ${showEmojiPicker ? 'text-primary' : 'text-white/40 hover:text-primary'}`} aria-label="Emoji Picker"><Smile size={22} /></button>
-                    {showEmojiPicker && <div className="absolute bottom-16 right-0 w-72 h-80 bg-bg-0 border border-white/10 rounded-r2 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-6 glass-card grid grid-cols-6 gap-3 overflow-y-auto no-scrollbar animate-in slide-in-from-bottom-2 z-50">
-                        {['🔥','✨','🚀','💀','🤖','👽','👾','🧠','💎','🛡️','⚡','🔋','✔️','🌈','🦾','🕹️','💻','📡','🛰️','🪐','🌓','🌀','🧬','🔬','🔑','⚙️','💣'].map(e => <button key={e} onClick={() => { setInputValue(prev => prev + e); setShowEmojiPicker(false); }} className="text-2xl cursor-pointer hover:scale-125 transition-transform p-1 text-center focus:outline-none">{e}</button>)}
-                    </div>}
+                    {showEmojiPicker && (
+                      <EmojiPicker
+                        onSelect={(emoji) => { setInputValue(prev => prev + emoji); setShowEmojiPicker(false); }}
+                        onClose={() => setShowEmojiPicker(false)}
+                      />
+                    )}
                 </div>
                 <button onClick={handleSendMessage} className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-bg-0 shadow-glow hover:scale-105 transition-all group-focus-within:shadow-[0_0_20px_#13DDEC]" aria-label="Send Message"><Send size={20} /></button>
             </div>

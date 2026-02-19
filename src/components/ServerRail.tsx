@@ -28,7 +28,9 @@ export const ServerRail: React.FC<ServerRailProps> = ({ servers, activeServerId,
 
       <div className="w-10 h-[1px] bg-white/10"></div>
 
-      {servers.map((server) => (
+      {servers.map((server) => {
+        const totalUnread = server.categories.flatMap(c => c.channels).reduce((sum, ch) => sum + (ch.unreadCount || 0), 0);
+        return (
         <div key={server.id} className="group relative flex flex-col items-center cursor-pointer">
           <button 
             onClick={() => onSelectServer(server.id)}
@@ -39,12 +41,23 @@ export const ServerRail: React.FC<ServerRailProps> = ({ servers, activeServerId,
           {activeServerId === server.id && (
             <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-2 h-7 bg-primary rounded-r-full shadow-[0_0_10px_#13DDEC]"></div>
           )}
+          {/* Unread badge */}
+          {totalUnread > 0 && activeServerId !== server.id && (
+            <div className="absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] bg-accent-danger rounded-full flex items-center justify-center text-[9px] font-bold text-white border-2 border-bg-0 px-1 shadow-[0_0_6px_rgba(255,42,109,0.5)]">
+              {totalUnread}
+            </div>
+          )}
+          {/* Unread pip (no count, just indicator) */}
+          {totalUnread === 0 && activeServerId !== server.id && server.categories.some(c => c.channels.some(ch => (ch.unreadCount || 0) > 0)) && (
+            <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
+          )}
           {/* Tooltip */}
           <div className="absolute left-[70px] bg-bg-1 text-white text-[10px] font-bold px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 border border-primary/20 whitespace-nowrap tracking-widest translate-x-4 group-hover:translate-x-0">
             {server.name.toUpperCase()}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       <button 
         onClick={onCreateServer}

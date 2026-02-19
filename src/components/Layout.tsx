@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { AnimatePresence, motion, FullScreenOverlay, ModalOverlay } from '@/lib/animations';
 import { ServerRail } from '@/components/ServerRail';
 import { ChannelRail } from '@/components/ChannelRail';
@@ -182,9 +183,37 @@ export const Layout: React.FC = () => {
 
   const showMemberSidebar = !isDM && activeServer && !isExplore;
   const isOverlaySidebar = isMobile;
+  const isTouchDevice = isMobile || isTablet;
+
+  // Swipe gestures for sidebars on touch devices
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  useSwipeGesture(mainRef, {
+    edgeZone: 30,
+    edge: 'left',
+    enabled: isTouchDevice && !state.mobileMenuOpen && state.memberListCollapsed,
+    onSwipeRight: () => setState(s => ({ ...s, mobileMenuOpen: true })),
+  });
+
+  useSwipeGesture(mainRef, {
+    edgeZone: 30,
+    edge: 'right',
+    enabled: isTouchDevice && !state.mobileMenuOpen && !!showMemberSidebar && state.memberListCollapsed,
+    onSwipeLeft: () => setState(s => ({ ...s, memberListCollapsed: false })),
+  });
+
+  useSwipeGesture(mainRef, {
+    enabled: isTouchDevice && state.mobileMenuOpen,
+    onSwipeLeft: () => setState(s => ({ ...s, mobileMenuOpen: false })),
+  });
+
+  useSwipeGesture(mainRef, {
+    enabled: isTouchDevice && !state.memberListCollapsed,
+    onSwipeRight: () => setState(s => ({ ...s, memberListCollapsed: true })),
+  });
 
   return (
-    <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
+    <div ref={mainRef} className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
       <AnimatePresence mode="wait">
         {state.showSettings && (
           <FullScreenOverlay key="settings">

@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Channel, Message, User, MessageLayout } from '@/types';
 import { generateTheme } from '@/utils/themeGenerator';
 import { renderMarkdown } from '@/utils/markdown';
@@ -9,8 +9,11 @@ import { MediaEmbed } from '@/components/MediaEmbed';
 import { ForwardMessageModal } from '@/components/ForwardMessageModal';
 import { PollCreator } from '@/components/PollCreator';
 import { PollMessage } from '@/components/PollMessage';
+import { ThreadPanel } from '@/components/ThreadPanel';
+import { MediaLightbox } from '@/components/MediaLightbox';
+import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal';
 import { useFeature } from '@/hooks/useFeature';
-import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3 } from 'lucide-react';
+import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3, Link2, ArrowDown, MessageCircle } from 'lucide-react';
 
 // Action button sub-component for message interactions
 const ActionBtn = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) => (
@@ -178,6 +181,18 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   const hasForwarding = useFeature('messageForwarding');
   const hasPolls = useFeature('polls');
+  const hasThreads = useFeature('threads');
+  const hasMessageLinks = useFeature('messageLinks');
+  const hasLightbox = useFeature('imageLightbox');
+  const hasDeleteConfirm = useFeature('deleteConfirmation');
+  const hasJumpToPresent = useFeature('jumpToPresent');
+  const hasUnreadDivider = useFeature('unreadDivider');
+
+  const [threadMessage, setThreadMessage] = useState<Message | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Message | null>(null);
+  const [isScrolledUp, setIsScrolledUp] = useState(false);
+  const UNREAD_AFTER_INDEX = 8; // Mock: messages after index 8 are "unread"
 
   useEffect(() => {
     setMessagesState(messages);
@@ -264,7 +279,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   const deleteMessage = (msgId: string) => {
-    setMessagesState(prev => prev.filter(m => m.id !== msgId));
+    if (hasDeleteConfirm) {
+      const msg = messagesState.find(m => m.id === msgId);
+      if (msg) setDeleteTarget(msg);
+    } else {
+      setMessagesState(prev => prev.filter(m => m.id !== msgId));
+    }
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      setMessagesState(prev => prev.filter(m => m.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    }
+  };
+
+  const copyMessageLink = (msgId: string) => {
+    const link = `${window.location.origin}/#/messages/${msgId}`;
+    navigator.clipboard.writeText(link).catch(() => {});
   };
 
   const togglePin = (msgId: string) => {
@@ -292,11 +324,23 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     setEditValue('');
   };
 
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      setIsScrolledUp(false);
     }
-  }, [messages, channel, messageLayout, searchQuery]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, channel, messageLayout, searchQuery, scrollToBottom]);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current || !hasJumpToPresent) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    setIsScrolledUp(scrollHeight - scrollTop - clientHeight > 200);
+  }, [hasJumpToPresent]);
+  
 
   const getUser = (id: string): User => {
     const found = users.find(u => u.id === id);
@@ -467,7 +511,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           messageLayout === 'terminal' ? 'space-y-0.5 font-mono' : 
           messageLayout === 'bubbles' ? 'space-y-2.5' : 
           'space-y-6'
-        }`} ref={scrollRef}>
+        }`} ref={scrollRef} onScroll={handleScroll}>
         
         {messageLayout !== 'terminal' && !searchQuery && (
              <div className="pb-10 border-b border-white/5 mb-6">
@@ -487,7 +531,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
              </div>
         )}
 
-        {filteredMessages.map((msg) => {
+        {filteredMessages.map((msg, msgIndex) => {
+          {/* Unread divider */}
+          const showUnreadDivider = hasUnreadDivider && !searchQuery && msgIndex === UNREAD_AFTER_INDEX;
           const user = getUser(msg.userId);
           const isSpecial = user.role === 'Admin' || user.role === 'Moderator';
           const isMe = msg.userId === 'me';
@@ -498,8 +544,15 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           // --- TERMINAL VIEW ---
           if (messageLayout === 'terminal') {
              return (
+                 <React.Fragment key={msg.id}>
+                  {showUnreadDivider && (
+                    <div className="flex items-center gap-3 py-1 -mx-1.5">
+                      <div className="flex-1 h-[1px] bg-accent-danger/40"></div>
+                      <span className="text-[9px] text-accent-danger font-bold font-mono tracking-widest">NEW</span>
+                      <div className="flex-1 h-[1px] bg-accent-danger/40"></div>
+                    </div>
+                  )}
                  <div 
-                    key={msg.id}
                     onContextMenu={(e) => handleContextMenu(e, msg.id)}
                     className="flex text-xs hover:bg-white/5 px-1.5 -mx-1.5 py-0.5 rounded font-mono"
                  >
@@ -510,17 +563,26 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                        <span className="text-white/90 break-words">{displayContent}{msg.editedAt && <span className="text-white/20 text-[8px] ml-1">(edited)</span>}</span>
                      </div>
                  </div>
+                 </React.Fragment>
              )
           }
 
           // --- BUBBLES VIEW ---
           if (messageLayout === 'bubbles') {
               return (
-                  <div key={msg.id} 
-                       onMouseEnter={() => setHoveredMessageId(msg.id)}
-                       onMouseLeave={() => setHoveredMessageId(null)}
-                       onContextMenu={(e) => handleContextMenu(e, msg.id)}
-                       className={`flex gap-2.5 w-full group relative ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                  <React.Fragment key={msg.id}>
+                  {showUnreadDivider && (
+                    <div className="flex items-center gap-3 py-2">
+                      <div className="flex-1 h-[1px] bg-accent-danger/40"></div>
+                      <span className="text-[9px] text-accent-danger font-bold font-mono tracking-widest">NEW MESSAGES</span>
+                      <div className="flex-1 h-[1px] bg-accent-danger/40"></div>
+                    </div>
+                  )}
+                   <div  
+                        onMouseEnter={() => setHoveredMessageId(msg.id)}
+                        onMouseLeave={() => setHoveredMessageId(null)}
+                        onContextMenu={(e) => handleContextMenu(e, msg.id)}
+                        className={`flex gap-2.5 w-full group relative ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                       {!isMe && (
                         <UserPopup user={user}>
                             <img src={user.avatar} className="w-7 h-7 rounded-full self-end mb-1 cursor-pointer hover:ring-2 hover:ring-primary transition-all shadow-lg" alt={user.username} />
@@ -606,13 +668,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                            </div>
                        )}
                   </div>
+                  </React.Fragment>
               )
           }
 
           // --- MODERN VIEW (Default) ---
           return (
+            <React.Fragment key={msg.id}>
+            {showUnreadDivider && (
+              <div className="flex items-center gap-3 py-2 -mx-2.5">
+                <div className="flex-1 h-[1px] bg-accent-danger/40"></div>
+                <span className="text-[9px] text-accent-danger font-bold font-mono tracking-widest">NEW MESSAGES</span>
+                <div className="flex-1 h-[1px] bg-accent-danger/40"></div>
+              </div>
+            )}
             <div 
-                key={msg.id} 
                 onMouseEnter={() => setHoveredMessageId(msg.id)}
                 onMouseLeave={() => setHoveredMessageId(null)}
                 onContextMenu={(e) => handleContextMenu(e, msg.id)}
@@ -699,6 +769,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       {isMe && <ActionBtn icon={<Pencil size={14} />} label="Edit Message" onClick={() => startEdit(msg)} />}
                       <ActionBtn icon={<Pin size={14} className={msg.pinned ? 'text-primary' : ''} />} label={msg.pinned ? 'Unpin' : 'Pin'} onClick={() => togglePin(msg.id)} />
                       {hasForwarding && <ActionBtn icon={<Forward size={14} />} label="Forward" onClick={() => setForwardingContent(msg.content)} />}
+                      {hasThreads && <ActionBtn icon={<MessageCircle size={14} />} label="Thread" onClick={() => setThreadMessage(msg)} />}
+                      {hasMessageLinks && <ActionBtn icon={<Link2 size={14} />} label="Copy Link" onClick={() => copyMessageLink(msg.id)} />}
                       <ActionBtn icon={<Trash2 size={14} />} label="Delete Message" onClick={() => deleteMessage(msg.id)} />
                       <ActionBtn 
                         icon={<MicOff size={14} className={mutedUsers.has(msg.userId) ? "text-accent-danger" : ""} />} 
@@ -724,6 +796,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   </div>
               )}
             </div>
+            </React.Fragment>
           );
         })}
       </div>
@@ -823,6 +896,25 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
                   >
                     <Forward size={12} className="text-white/40" /> Forward Message
+                  </button>
+                )}
+                {hasThreads && (
+                  <button 
+                    onClick={() => {
+                      const msg = messagesState.find(m => m.id === contextMenu.msgId);
+                      if (msg) { setThreadMessage(msg); setContextMenu(null); }
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <MessageCircle size={12} className="text-white/40" /> Create Thread
+                  </button>
+                )}
+                {hasMessageLinks && (
+                  <button 
+                    onClick={() => { copyMessageLink(contextMenu.msgId); setContextMenu(null); }}
+                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <Link2 size={12} className="text-white/40" /> Copy Message Link
                   </button>
                 )}
                 <div className="h-[1px] bg-white/5 my-0.5"></div>
@@ -942,6 +1034,44 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         <ForwardMessageModal
           messageContent={forwardingContent}
           onClose={() => setForwardingContent(null)}
+        />
+      )}
+
+      {/* Jump to Present */}
+      {hasJumpToPresent && isScrolledUp && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-32 left-1/2 -translate-x-1/2 z-20 glass-card bg-bg-0/80 border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-2xl hover:border-primary/30 transition-all animate-in fade-in slide-in-from-bottom-2"
+        >
+          <ArrowDown size={14} className="text-primary" />
+          <span className="text-[10px] text-white/60 font-mono font-bold">JUMP TO PRESENT</span>
+        </button>
+      )}
+
+      {/* Delete Confirmation */}
+      {deleteTarget && hasDeleteConfirm && (
+        <ConfirmDeleteModal
+          messageContent={deleteTarget.content}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* Thread Panel */}
+      {threadMessage && hasThreads && (
+        <ThreadPanel
+          parentMessage={threadMessage}
+          parentUser={getUser(threadMessage.userId)}
+          allUsers={users}
+          onClose={() => setThreadMessage(null)}
+        />
+      )}
+
+      {/* Media Lightbox */}
+      {lightboxSrc && hasLightbox && (
+        <MediaLightbox
+          src={lightboxSrc}
+          onClose={() => setLightboxSrc(null)}
         />
       )}
     </div>

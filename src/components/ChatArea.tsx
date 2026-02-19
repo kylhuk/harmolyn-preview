@@ -4,6 +4,7 @@ import { Channel, Message, User, MessageLayout } from '@/types';
 import { generateTheme } from '@/utils/themeGenerator';
 import { renderMarkdown } from '@/utils/markdown';
 import { EmojiPicker } from '@/components/EmojiPicker';
+import { TypingIndicator } from '@/components/TypingIndicator';
 import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check } from 'lucide-react';
 
 // Action button sub-component for message interactions
@@ -769,6 +770,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 </div>
             </div>
         )}
+
+        {/* Typing Indicator */}
+        <TypingIndicator users={users} currentUserId="me" />
 
         {/* Reply Preview Bar */}
         {replyingTo && (

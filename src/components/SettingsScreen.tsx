@@ -19,7 +19,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose, o
   const hasQuests = useFeature('quests');
 
   return (
-    <div className="absolute inset-0 z-[100] bg-bg-0 flex flex-col md:flex-row text-white/70 animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+    <div className="absolute inset-0 z-[100] bg-bg-0 flex flex-col md:flex-row text-white/70 overflow-hidden">
       {/* Sidebar - Desktop */}
       <div className="hidden md:flex w-[224px] bg-bg-1 flex-col items-end py-10 px-5 border-r border-white/5">
          <div className="w-full space-y-1.5">

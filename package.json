@@ -13,6 +13,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
     "autoprefixer": "^10.4.24",
+    "framer-motion": "^12.34.2",
     "lovable-tagger": "^1.1.13",
     "lucide-react": "0.460.0",
     "react": "^19.2.4",

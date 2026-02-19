@@ -14,10 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Lato', 'sans-serif'],
+        sans: ['Space Grotesk', 'sans-serif'],
         mono: ['Space Mono', 'monospace'],
-        chat: ['Roboto', 'sans-serif'],
-        display: ['Roboto', 'sans-serif'],
+        display: ['Space Grotesk', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",

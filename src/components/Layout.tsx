@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { AnimatePresence, motion, FullScreenOverlay, ModalOverlay } from '@/lib/animations';
 import { ServerRail } from '@/components/ServerRail';
 import { ChannelRail } from '@/components/ChannelRail';
 import { ChatArea } from '@/components/ChatArea';
@@ -167,31 +168,40 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
-      {state.showSettings && (
-        <SettingsScreen
-          user={CURRENT_USER}
-          onClose={() => setState(s => ({...s, showSettings: false}))}
-          onOpenNitro={() => setState(s => ({...s, showSettings: false, showNitro: true}))}
-          onOpenShop={() => setState(s => ({...s, showSettings: false, showShop: true}))}
-          onOpenQuests={() => setState(s => ({...s, showSettings: false, showQuests: true}))}
-        />
-      )}
-      {state.viewMode === 'server-settings' && activeServer && (
-        <ServerSettingsScreen server={activeServer} onClose={() => setState(s => ({...s, viewMode: 'chat'}))} />
-      )}
-      {state.showCreateServer && <CreateServerModal onClose={() => setState(s => ({...s, showCreateServer: false}))} />}
-      {state.showNitro && <NitroScreen onClose={() => setState(s => ({...s, showNitro: false}))} />}
-      {state.showShop && <ShopScreen onClose={() => setState(s => ({...s, showShop: false}))} />}
-      {state.showQuests && <QuestsScreen onClose={() => setState(s => ({...s, showQuests: false}))} />}
-      {state.showBoost && activeServer && <ServerBoost serverName={activeServer.name} currentBoosts={3} onClose={() => setState(s => ({...s, showBoost: false}))} />}
-      {state.showApplications && <ServerApplications onClose={() => setState(s => ({...s, showApplications: false}))} />}
-      {state.showActivities && <ActivityLauncher onClose={() => setState(s => ({...s, showActivities: false}))} />}
-      {showQuickSwitcher && hasQuickSwitcher && (
-        <QuickSwitcher onClose={() => setShowQuickSwitcher(false)} onNavigate={handleQuickNavigate} />
-      )}
-      {showKeyboardShortcuts && hasKeyboardShortcuts && (
-        <KeyboardShortcutsOverlay onClose={() => setShowKeyboardShortcuts(false)} />
-      )}
+      <AnimatePresence mode="wait">
+        {state.showSettings && (
+          <FullScreenOverlay key="settings">
+            <SettingsScreen
+              user={CURRENT_USER}
+              onClose={() => setState(s => ({...s, showSettings: false}))}
+              onOpenNitro={() => setState(s => ({...s, showSettings: false, showNitro: true}))}
+              onOpenShop={() => setState(s => ({...s, showSettings: false, showShop: true}))}
+              onOpenQuests={() => setState(s => ({...s, showSettings: false, showQuests: true}))}
+            />
+          </FullScreenOverlay>
+        )}
+        {state.viewMode === 'server-settings' && activeServer && (
+          <FullScreenOverlay key="server-settings">
+            <ServerSettingsScreen server={activeServer} onClose={() => setState(s => ({...s, viewMode: 'chat'}))} />
+          </FullScreenOverlay>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {state.showCreateServer && <CreateServerModal key="create" onClose={() => setState(s => ({...s, showCreateServer: false}))} />}
+        {state.showNitro && <NitroScreen key="nitro" onClose={() => setState(s => ({...s, showNitro: false}))} />}
+        {state.showShop && <ShopScreen key="shop" onClose={() => setState(s => ({...s, showShop: false}))} />}
+        {state.showQuests && <QuestsScreen key="quests" onClose={() => setState(s => ({...s, showQuests: false}))} />}
+        {state.showBoost && activeServer && <ServerBoost key="boost" serverName={activeServer.name} currentBoosts={3} onClose={() => setState(s => ({...s, showBoost: false}))} />}
+        {state.showApplications && <ServerApplications key="apps" onClose={() => setState(s => ({...s, showApplications: false}))} />}
+        {state.showActivities && <ActivityLauncher key="activities" onClose={() => setState(s => ({...s, showActivities: false}))} />}
+        {showQuickSwitcher && hasQuickSwitcher && (
+          <QuickSwitcher key="quickswitcher" onClose={() => setShowQuickSwitcher(false)} onNavigate={handleQuickNavigate} />
+        )}
+        {showKeyboardShortcuts && hasKeyboardShortcuts && (
+          <KeyboardShortcutsOverlay key="shortcuts" onClose={() => setShowKeyboardShortcuts(false)} />
+        )}
+      </AnimatePresence>
 
       {/* Side Rail: Hidden on Mobile */}
       {!isMobile && (
@@ -306,13 +316,18 @@ export const Layout: React.FC = () => {
 
             {/* Bottom Dock for Mobile Views */}
             {isMobile && (
-              <div className="h-[70px] w-full glass-panel flex items-center justify-around px-3 border-t border-white/5 pb-safe z-50 relative">
+              <motion.div 
+                initial={{ y: 70 }}
+                animate={{ y: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="h-[70px] w-full glass-panel flex items-center justify-around px-3 border-t border-white/5 pb-safe z-50 relative"
+              >
                  <BottomNavItem active={isHome} onClick={() => handleServerSelect('home')} icon={<Home size={20} />} label="HOME" />
                  <BottomNavItem active={!isHome && !isExplore} onClick={() => setState(s => ({...s, mobileMenuOpen: true}))} icon={<Menu size={20} />} label="CHANNELS" />
                  <BottomNavItem active={false} onClick={() => setState(s => ({...s, showCreateServer: true}))} icon={<div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-bg-0 shadow-glow -mt-5"><UsersIcon size={20} /></div>} label="CREATE" isCore />
                  <BottomNavItem active={isExplore} onClick={() => handleServerSelect('explore')} icon={<Compass size={20} />} label="EXPLORE" />
                  <BottomNavItem active={false} onClick={() => setState(s => ({...s, showSettings: true}))} icon={<SettingsIcon size={20} />} label="SETTINGS" />
-              </div>
+              </motion.div>
             )}
           </div>
       </div>

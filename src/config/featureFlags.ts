@@ -81,7 +81,7 @@ export const FEATURES = {
   rolesManagement: true,
   membersManagement: true,
   serverBoost: true,
-  serverApplications: false,
+  serverApplications: true,
   joinViaInvite: true,
   vanityUrls: false,
 
@@ -116,12 +116,12 @@ export const FEATURES = {
   // ─── Notifications ───────────────────────────────────────
   desktopNotifications: false,
   muteChannel: false,
-  roleMentionSuppression: false,
+  roleMentionSuppression: true,
 
   // ─── Monetization ────────────────────────────────────────
-  nitro: false,
-  shop: false,
-  quests: false,
+  nitro: true,
+  shop: true,
+  quests: true,
   serverTags: false,
 
   // ─── Other Implemented ───────────────────────────────────

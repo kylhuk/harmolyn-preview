@@ -58,7 +58,7 @@ export const FEATURES = {
   voiceJoinLeave: true,
   screenShare: false,
   soundboard: true,
-  activities: false,
+  activities: true,
   dmCalls: true,
   stageChannels: true,
   voiceTextChat: true,
@@ -80,7 +80,7 @@ export const FEATURES = {
   serverDiscovery: true,
   rolesManagement: true,
   membersManagement: true,
-  serverBoost: false,
+  serverBoost: true,
   serverApplications: false,
   joinViaInvite: true,
   vanityUrls: false,
@@ -96,9 +96,9 @@ export const FEATURES = {
   messageRequests: true,
 
   // ─── Moderation ──────────────────────────────────────────
-  autoMod: false,
+  autoMod: true,
   auditLog: true,
-  timeout: false,
+  timeout: true,
   roleHierarchyDragDrop: false,
   duplicateChannel: false,
 

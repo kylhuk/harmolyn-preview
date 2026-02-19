@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Server, User } from '@/types';
-import { X, Settings, Hash, Shield, Users, Link, ChevronRight, Volume2, Crown, Pencil, Trash2, Plus, Copy, Check, FileText, Clock, Filter } from 'lucide-react';
+import { X, Settings, Hash, Shield, Users, Link, ChevronRight, Volume2, Crown, Pencil, Trash2, Plus, Copy, Check, FileText, Clock, Filter, ShieldAlert, Ban, AlertTriangle } from 'lucide-react';
 import { useFeature } from '@/hooks/useFeature';
 
 interface ServerSettingsScreenProps {
@@ -9,7 +9,7 @@ interface ServerSettingsScreenProps {
   onClose: () => void;
 }
 
-type SettingsSection = 'overview' | 'roles' | 'channels' | 'members' | 'invites' | 'audit-log';
+type SettingsSection = 'overview' | 'roles' | 'channels' | 'members' | 'invites' | 'audit-log' | 'automod';
 
 const MOCK_ROLES = [
   { id: 'r1', name: 'Admin', color: '#FF2A6D', permissions: ['MANAGE_SERVER', 'MANAGE_CHANNELS', 'MANAGE_MEMBERS', 'BAN_MEMBERS'] },
@@ -21,6 +21,7 @@ export const ServerSettingsScreen: React.FC<ServerSettingsScreenProps> = ({ serv
   const [activeSection, setActiveSection] = useState<SettingsSection>('overview');
   const [inviteCopied, setInviteCopied] = useState(false);
   const hasAuditLog = useFeature('auditLog');
+  const hasAutoMod = useFeature('autoMod');
 
   const handleCopyInvite = () => {
     navigator.clipboard.writeText('https://harmolyn.app/invite/xK4nQ9');
@@ -35,6 +36,7 @@ export const ServerSettingsScreen: React.FC<ServerSettingsScreenProps> = ({ serv
     { id: 'members', label: 'Members', icon: <Users size={16} /> },
     { id: 'invites', label: 'Invites', icon: <Link size={16} /> },
     ...(hasAuditLog ? [{ id: 'audit-log' as SettingsSection, label: 'Audit Log', icon: <FileText size={16} /> }] : []),
+    ...(hasAutoMod ? [{ id: 'automod' as SettingsSection, label: 'AutoMod', icon: <ShieldAlert size={16} /> }] : []),
   ];
 
   return (
@@ -76,6 +78,7 @@ export const ServerSettingsScreen: React.FC<ServerSettingsScreenProps> = ({ serv
           {activeSection === 'members' && <MembersSection members={server.members} />}
           {activeSection === 'invites' && <InvitesSection onCopy={handleCopyInvite} copied={inviteCopied} />}
           {activeSection === 'audit-log' && hasAuditLog && <AuditLogSection />}
+          {activeSection === 'automod' && hasAutoMod && <AutoModSection />}
         </div>
       </div>
 
@@ -371,6 +374,97 @@ const AuditLogSection: React.FC = () => {
           <p className="text-xs text-white/20">No matching audit entries</p>
         </div>
       )}
+    </>
+  );
+};
+
+/* ===== AutoMod ===== */
+
+const AUTOMOD_RULES = [
+  { id: 'am1', name: 'Block Profanity', description: 'Automatically filter messages containing profanity', type: 'keyword', enabled: true, actions: ['Delete message', 'Alert moderators'] },
+  { id: 'am2', name: 'Spam Protection', description: 'Detect repeated messages and excessive mentions', type: 'spam', enabled: true, actions: ['Timeout user (60s)', 'Delete message'] },
+  { id: 'am3', name: 'Link Filter', description: 'Block messages containing suspicious or unapproved links', type: 'link', enabled: false, actions: ['Delete message'] },
+  { id: 'am4', name: 'Invite Filter', description: 'Block invite links from non-moderators', type: 'invite', enabled: true, actions: ['Delete message', 'Alert moderators'] },
+  { id: 'am5', name: 'Mention Spam', description: 'Block messages with excessive @mentions', type: 'mention', enabled: false, actions: ['Timeout user (300s)'] },
+];
+
+const ruleTypeColors: Record<string, string> = {
+  keyword: 'text-accent-danger',
+  spam: 'text-accent-warning',
+  link: 'text-primary',
+  invite: 'text-accent-purple',
+  mention: 'text-accent-success',
+};
+
+const AutoModSection: React.FC = () => {
+  const [rules, setRules] = useState(AUTOMOD_RULES);
+
+  const toggleRule = (id: string) => {
+    setRules(prev => prev.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
+  };
+
+  return (
+    <>
+      <header className="mb-10">
+        <h2 className="text-[26px] font-bold text-white mb-2 font-display tracking-tight">AUTOMOD // SHIELD</h2>
+        <p className="micro-label text-white/30">AUTOMATED // MODERATION // RULES</p>
+      </header>
+
+      <div className="flex items-center justify-between mb-5">
+        <span className="micro-label text-white/30">ACTIVE RULES // {rules.filter(r => r.enabled).length}/{rules.length}</span>
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stroke-primary text-primary text-[10px] font-bold hover:bg-primary/10 transition-all">
+          <Plus size={12} /> Create Rule
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {rules.map(rule => (
+          <div key={rule.id} className={`glass-card rounded-r2 p-4 border transition-all ${rule.enabled ? 'border-white/8' : 'border-white/5 opacity-50'}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <ShieldAlert size={14} className={ruleTypeColors[rule.type] || 'text-white/40'} />
+                  <span className="text-sm font-bold text-white">{rule.name}</span>
+                  <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${ruleTypeColors[rule.type]} bg-white/3 border-white/5`}>
+                    {rule.type}
+                  </span>
+                </div>
+                <p className="text-[11px] text-white/40 mb-3">{rule.description}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {rule.actions.map((action, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-mono text-white/30 border border-white/5">
+                      {action}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => toggleRule(rule.id)}
+                className={`w-10 h-6 rounded-full transition-all flex-shrink-0 relative ${rule.enabled ? 'bg-primary/30' : 'bg-white/10'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 rounded-full transition-all ${rule.enabled ? 'left-5 bg-primary shadow-glow-sm' : 'left-1 bg-white/30'}`} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-8">
+        <div className="micro-label text-white/30 mb-3">QUARANTINE // STATS // 30 DAYS</div>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'BLOCKED', value: '247', icon: <Ban size={14} /> },
+            { label: 'TIMEOUTS', value: '12', icon: <Clock size={14} /> },
+            { label: 'ALERTS', value: '89', icon: <AlertTriangle size={14} /> },
+          ].map(stat => (
+            <div key={stat.label} className="glass-card rounded-r2 p-4 border border-white/5 text-center">
+              <div className="text-white/20 mb-2 flex justify-center">{stat.icon}</div>
+              <div className="text-lg font-bold text-white font-display">{stat.value}</div>
+              <div className="micro-label text-white/20 mt-1">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </>
   );
 };

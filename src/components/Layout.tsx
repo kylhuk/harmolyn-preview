@@ -125,7 +125,7 @@ export const Layout: React.FC = () => {
   // memberListHovered is used only on desktop for hover-to-peek
 
   return (
-    <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
+    <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={{ ...themeStyle, zoom: 0.8 }}>
       {state.showSettings && <SettingsScreen user={CURRENT_USER} onClose={() => setState(s => ({...s, showSettings: false}))} />}
       {state.viewMode === 'server-settings' && activeServer && (
         <ServerSettingsScreen server={activeServer} onClose={() => setState(s => ({...s, viewMode: 'chat'}))} />
@@ -207,12 +207,22 @@ export const Layout: React.FC = () => {
                              {/* Spacer: full width when expanded on desktop */}
                              <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isOverlaySidebar ? 'w-[280px]' : 'w-0'}`}></div>
 
-                             {/* Overlay backdrop for tablet/mobile */}
+                             {/* Overlay backdrop + sidebar for tablet/mobile */}
                              {isOverlaySidebar && !state.memberListCollapsed && (
-                               <div 
-                                 className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 animate-in fade-in"
-                                 onClick={() => setState(s => ({...s, memberListCollapsed: true}))}
-                               ></div>
+                               <>
+                                 <div 
+                                   className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 animate-in fade-in"
+                                   onClick={() => setState(s => ({...s, memberListCollapsed: true}))}
+                                 ></div>
+                                 <div className="absolute right-0 top-0 bottom-0 z-40 h-full w-[280px]">
+                                   <MemberSidebar 
+                                     members={activeServer!.members} 
+                                     collapsed={false}
+                                     onToggleCollapse={() => setState(s => ({...s, memberListCollapsed: true}))}
+                                     isOverlay={true}
+                                   />
+                                 </div>
+                               </>
                              )}
                            </>
                          )}

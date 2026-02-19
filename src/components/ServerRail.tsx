@@ -57,7 +57,7 @@ export const ServerRail: React.FC<ServerRailProps> = ({ servers, activeServerId,
             <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
           )}
           {/* Tooltip */}
-          <div className="absolute left-[56px] bg-bg-1 text-white text-[9px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 border border-primary/20 whitespace-nowrap tracking-widest translate-x-4 group-hover:translate-x-0">
+          <div className="absolute left-[56px] bg-bg-1 text-white text-[9px] font-bold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all duration-200 delay-150 group-hover:delay-0 z-50 border border-primary/20 whitespace-nowrap tracking-widest translate-x-4 group-hover:translate-x-0 hover:translate-x-0">
             {server.name.toUpperCase()}
           </div>
         </div>

@@ -61,8 +61,8 @@ export const FEATURES = {
   activities: false,
   dmCalls: false,
   stageChannels: false,
-  voiceTextChat: false,
-  voiceControlBar: false,
+  voiceTextChat: true,
+  voiceControlBar: true,
 
   // ─── Channels ────────────────────────────────────────────
   textVoiceChannels: true,
@@ -73,7 +73,7 @@ export const FEATURES = {
   channelFollowing: false,
   scheduledEvents: true,
   channelCreationFlow: true,
-  channelPinsView: false,
+  channelPinsView: true,
 
   // ─── Server ──────────────────────────────────────────────
   serverSettings: true,
@@ -97,7 +97,7 @@ export const FEATURES = {
 
   // ─── Moderation ──────────────────────────────────────────
   autoMod: false,
-  auditLog: false,
+  auditLog: true,
   timeout: false,
   roleHierarchyDragDrop: false,
   duplicateChannel: false,

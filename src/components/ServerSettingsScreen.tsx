@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
 import { Server, User } from '@/types';
-import { X, Settings, Hash, Shield, Users, Link, ChevronRight, Volume2, Crown, Pencil, Trash2, Plus, Copy, Check } from 'lucide-react';
+import { X, Settings, Hash, Shield, Users, Link, ChevronRight, Volume2, Crown, Pencil, Trash2, Plus, Copy, Check, FileText, Clock, Filter } from 'lucide-react';
+import { useFeature } from '@/hooks/useFeature';
 
 interface ServerSettingsScreenProps {
   server: Server;
   onClose: () => void;
 }
 
-type SettingsSection = 'overview' | 'roles' | 'channels' | 'members' | 'invites';
+type SettingsSection = 'overview' | 'roles' | 'channels' | 'members' | 'invites' | 'audit-log';
 
 const MOCK_ROLES = [
   { id: 'r1', name: 'Admin', color: '#FF2A6D', permissions: ['MANAGE_SERVER', 'MANAGE_CHANNELS', 'MANAGE_MEMBERS', 'BAN_MEMBERS'] },
@@ -19,6 +20,7 @@ const MOCK_ROLES = [
 export const ServerSettingsScreen: React.FC<ServerSettingsScreenProps> = ({ server, onClose }) => {
   const [activeSection, setActiveSection] = useState<SettingsSection>('overview');
   const [inviteCopied, setInviteCopied] = useState(false);
+  const hasAuditLog = useFeature('auditLog');
 
   const handleCopyInvite = () => {
     navigator.clipboard.writeText('https://harmolyn.app/invite/xK4nQ9');
@@ -32,6 +34,7 @@ export const ServerSettingsScreen: React.FC<ServerSettingsScreenProps> = ({ serv
     { id: 'channels', label: 'Channels', icon: <Hash size={16} /> },
     { id: 'members', label: 'Members', icon: <Users size={16} /> },
     { id: 'invites', label: 'Invites', icon: <Link size={16} /> },
+    ...(hasAuditLog ? [{ id: 'audit-log' as SettingsSection, label: 'Audit Log', icon: <FileText size={16} /> }] : []),
   ];
 
   return (
@@ -72,6 +75,7 @@ export const ServerSettingsScreen: React.FC<ServerSettingsScreenProps> = ({ serv
           {activeSection === 'channels' && <ChannelsSection server={server} />}
           {activeSection === 'members' && <MembersSection members={server.members} />}
           {activeSection === 'invites' && <InvitesSection onCopy={handleCopyInvite} copied={inviteCopied} />}
+          {activeSection === 'audit-log' && hasAuditLog && <AuditLogSection />}
         </div>
       </div>
 
@@ -282,3 +286,91 @@ const FieldRow: React.FC<{ label: string; value: string }> = ({ label, value }) 
     </button>
   </div>
 );
+
+/* ===== Audit Log ===== */
+
+const MOCK_AUDIT_ENTRIES = [
+  { id: 'a1', action: 'CHANNEL_CREATE', user: 'cipher_core', target: '#voice-lounge', timestamp: '2025-02-19 14:32', detail: 'Created voice channel' },
+  { id: 'a2', action: 'ROLE_UPDATE', user: 'cipher_core', target: 'Moderator', timestamp: '2025-02-19 13:10', detail: 'Added MANAGE_CHANNELS permission' },
+  { id: 'a3', action: 'MEMBER_BAN', user: 'nova_pulse', target: 'spam_bot_42', timestamp: '2025-02-18 22:45', detail: 'Banned for spam' },
+  { id: 'a4', action: 'MESSAGE_DELETE', user: 'echo_drift', target: '#general', timestamp: '2025-02-18 20:12', detail: 'Deleted message from user glitch_weaver' },
+  { id: 'a5', action: 'SERVER_UPDATE', user: 'cipher_core', target: 'Server', timestamp: '2025-02-18 18:00', detail: 'Updated server description' },
+  { id: 'a6', action: 'INVITE_CREATE', user: 'nova_pulse', target: 'xK4nQ9', timestamp: '2025-02-17 10:30', detail: 'Created invite link (24h, single use)' },
+];
+
+const actionColors: Record<string, string> = {
+  'CHANNEL_CREATE': 'text-accent-success',
+  'ROLE_UPDATE': 'text-accent-purple',
+  'MEMBER_BAN': 'text-accent-danger',
+  'MESSAGE_DELETE': 'text-accent-warning',
+  'SERVER_UPDATE': 'text-primary',
+  'INVITE_CREATE': 'text-primary',
+};
+
+const AuditLogSection: React.FC = () => {
+  const [filter, setFilter] = useState('all');
+  const actions = ['all', 'CHANNEL_CREATE', 'ROLE_UPDATE', 'MEMBER_BAN', 'MESSAGE_DELETE', 'SERVER_UPDATE', 'INVITE_CREATE'];
+
+  const filtered = filter === 'all' ? MOCK_AUDIT_ENTRIES : MOCK_AUDIT_ENTRIES.filter(e => e.action === filter);
+
+  return (
+    <>
+      <header className="mb-10">
+        <h2 className="text-[26px] font-bold text-white mb-2 font-display tracking-tight">AUDIT // LOG</h2>
+        <p className="micro-label text-white/30">ACTIONS // HISTORY // TRANSPARENCY</p>
+      </header>
+
+      {/* Filters */}
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        <Filter size={12} className="text-white/30" />
+        {actions.map(a => (
+          <button
+            key={a}
+            onClick={() => setFilter(a)}
+            className={`px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-wider border transition-all ${
+              filter === a
+                ? 'bg-primary/15 border-primary/30 text-primary'
+                : 'bg-white/3 border-white/5 text-white/30 hover:bg-white/5 hover:text-white/50'
+            }`}
+          >
+            {a === 'all' ? 'All' : a.replace('_', ' ')}
+          </button>
+        ))}
+      </div>
+
+      {/* Entries */}
+      <div className="space-y-2">
+        {filtered.map(entry => (
+          <div key={entry.id} className="glass-card rounded-r2 p-4 border border-white/5 hover:border-white/10 transition-all group">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[9px] font-bold uppercase tracking-wider ${actionColors[entry.action] || 'text-white/40'}`}>
+                    {entry.action.replace('_', ' ')}
+                  </span>
+                  <span className="text-[8px] font-mono text-white/15">by</span>
+                  <span className="text-[10px] font-bold text-white/70">{entry.user}</span>
+                </div>
+                <p className="text-[11px] text-white/50">{entry.detail}</p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-[9px] font-mono text-white/20">TARGET: {entry.target}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 text-[8px] font-mono text-white/15 flex-shrink-0">
+                <Clock size={10} />
+                {entry.timestamp}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-16">
+          <FileText size={32} className="mx-auto text-white/10 mb-3" />
+          <p className="text-xs text-white/20">No matching audit entries</p>
+        </div>
+      )}
+    </>
+  );
+};

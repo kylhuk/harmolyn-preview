@@ -5,6 +5,8 @@ import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, Log
 import { USERS, DIRECT_MESSAGES, CURRENT_USER } from '@/data';
 import { StatusPicker } from '@/components/StatusPicker';
 import { AccountSwitcher } from '@/components/AccountSwitcher';
+import { VoiceControlBar } from '@/components/voice/VoiceControlBar';
+import { VoiceTextChat } from '@/components/voice/VoiceTextChat';
 import { useFeature } from '@/hooks/useFeature';
 interface ChannelRailProps {
   server?: Server;
@@ -138,16 +140,32 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
         )}
       </div>
 
-      {/* Connection Bar */}
-      {connectedVoiceChannelId && (
-          <div className="p-3 bg-accent-success/5 border-t border-accent-success/10 flex items-center justify-between">
-              <div>
-                  <div className="micro-label text-accent-success flex items-center gap-1.5"><Radio size={9} className="animate-pulse" /> Linked</div>
-                  <div className="text-[9px] text-white/50">ENC // VOICE NODE 04</div>
-              </div>
-              <button onClick={() => onJoinVoice('')} aria-label="Disconnect Voice" className="p-1.5 hover:bg-accent-danger/20 text-accent-danger rounded-full transition-colors"><LogOut size={14} /></button>
+      {/* Voice Control Bar */}
+      {connectedVoiceChannelId && useFeature('voiceControlBar') ? (
+        <>
+          <VoiceControlBar
+            channelName={
+              server?.categories.flatMap(c => c.channels).find(ch => ch.id === connectedVoiceChannelId)?.name || 'Voice'
+            }
+            onDisconnect={() => onJoinVoice('')}
+          />
+          {useFeature('voiceTextChat') && (
+            <VoiceTextChat
+              channelName={
+                server?.categories.flatMap(c => c.channels).find(ch => ch.id === connectedVoiceChannelId)?.name || 'voice'
+              }
+            />
+          )}
+        </>
+      ) : connectedVoiceChannelId ? (
+        <div className="p-3 bg-accent-success/5 border-t border-accent-success/10 flex items-center justify-between">
+          <div>
+            <div className="micro-label text-accent-success flex items-center gap-1.5"><Radio size={9} className="animate-pulse" /> Linked</div>
+            <div className="text-[9px] text-white/50">ENC // VOICE NODE 04</div>
           </div>
-      )}
+          <button onClick={() => onJoinVoice('')} aria-label="Disconnect Voice" className="p-1.5 hover:bg-accent-danger/20 text-accent-danger rounded-full transition-colors"><LogOut size={14} /></button>
+        </div>
+      ) : null}
 
       {/* User Footer */}
       <UserFooter currentUser={currentUser} onOpenSettings={onOpenSettings} />

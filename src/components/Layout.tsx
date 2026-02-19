@@ -7,6 +7,7 @@ import { MemberSidebar } from '@/components/MemberSidebar';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { ServerExplorer } from '@/components/ServerExplorer';
 import { CreateServerModal } from '@/components/CreateServerModal';
+import { FriendsPanel } from '@/components/FriendsPanel';
 import { SERVERS, USERS, MOCK_MESSAGES, CURRENT_USER, DIRECT_MESSAGES } from '@/data';
 import { Channel, AppState, MessageLayout } from '@/types';
 import { Home, Compass, MessageSquare, Users as UsersIcon, Settings as SettingsIcon, Menu } from 'lucide-react';
@@ -15,8 +16,8 @@ import { generateTheme } from '@/utils/themeGenerator';
 
 export const Layout: React.FC = () => {
   const [state, setState] = useState<AppState>({
-    activeServerId: 's1',
-    activeChannelId: 'ch1',
+    activeServerId: 'home',
+    activeChannelId: '',
     connectedVoiceChannelId: null,
     viewMode: 'chat',
     messageLayout: 'modern',
@@ -26,6 +27,8 @@ export const Layout: React.FC = () => {
     showCreateServer: false,
     showSettings: false
   });
+
+  const [showFriends, setShowFriends] = useState(true);
 
   // Theme State
   const [bgSeed, setBgSeed] = useState<string>('nexus-default');
@@ -72,21 +75,32 @@ export const Layout: React.FC = () => {
   let activeChannel = allChannels.find(ch => ch.id === state.activeChannelId) || allChannels[0] || fallbackChannel;
   let isDM = false;
   
-  if (isHome) {
-      const dm = DIRECT_MESSAGES.find(d => d.id === state.activeChannelId) || DIRECT_MESSAGES[0];
-      const dmUser = USERS.find(u => u.id === dm?.userId) || USERS[1];
-      activeChannel = { id: dm.id, name: dmUser.username, type: 'text', categoryId: 'dm' };
-      isDM = true;
+  if (isHome && state.activeChannelId) {
+      const dm = DIRECT_MESSAGES.find(d => d.id === state.activeChannelId);
+      if (dm) {
+        const dmUser = USERS.find(u => u.id === dm.userId) || USERS[1];
+        activeChannel = { id: dm.id, name: dmUser.username, type: 'text', categoryId: 'dm' };
+        isDM = true;
+      }
   }
 
   const handleServerSelect = (id: string | 'home' | 'explore') => {
       setState(prev => ({
           ...prev,
           activeServerId: id,
-          activeChannelId: id === 'home' ? 'dm1' : (SERVERS.find(s => s.id === id)?.categories[0].channels[0].id || 'ch1'),
+          activeChannelId: id === 'home' ? '' : (SERVERS.find(s => s.id === id)?.categories[0].channels[0].id || 'ch1'),
           viewMode: id === 'explore' ? 'explorer' : 'chat',
           mobileMenuOpen: false
       }));
+      if (id === 'home') setShowFriends(true);
+  };
+
+  const handleOpenDM = (userId: string) => {
+    const dm = DIRECT_MESSAGES.find(d => d.userId === userId);
+    if (dm) {
+      setState(prev => ({ ...prev, activeServerId: 'home', activeChannelId: dm.id, mobileMenuOpen: false }));
+      setShowFriends(false);
+    }
   };
 
   const handleJoinVoice = (id: string) => {
@@ -147,7 +161,7 @@ export const Layout: React.FC = () => {
                         connectedVoiceChannelId={state.connectedVoiceChannelId}
                         collapsed={state.channelListCollapsed && !channelListHovered && !isMobile}
                         onToggleCollapse={() => setState(s => ({...s, channelListCollapsed: !s.channelListCollapsed, mobileMenuOpen: false}))}
-                        onSelectChannel={id => setState(s => ({...s, activeChannelId: id, mobileMenuOpen: false}))}
+                        onSelectChannel={id => { setState(s => ({...s, activeChannelId: id, mobileMenuOpen: false})); setShowFriends(false); }}
                         onJoinVoice={handleJoinVoice}
                         onOpenSettings={() => setState(s => ({...s, showSettings: true}))}
                         isHome={isHome}
@@ -161,12 +175,14 @@ export const Layout: React.FC = () => {
             <div className="flex-1 flex min-w-0 overflow-hidden relative">
                 {isExplore ? (
                     <ServerExplorer />
+                ) : isHome && showFriends ? (
+                    <FriendsPanel onOpenDM={handleOpenDM} />
                 ) : (
                     <>
                         <ChatArea 
                             channel={activeChannel}
                             messages={MOCK_MESSAGES}
-                            users={activeServer?.members}
+                            users={activeServer?.members || USERS}
                             mobileMenuOpen={state.mobileMenuOpen}
                             messageLayout={state.messageLayout}
                             onToggleMobileMenu={() => setState(s => ({...s, mobileMenuOpen: !s.mobileMenuOpen}))}

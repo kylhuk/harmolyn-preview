@@ -1,8 +1,9 @@
 
-import React from 'react';
-import { Server, User } from '@/types';
+import React, { useState } from 'react';
+import { Server, User, UserStatus } from '@/types';
 import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, LogOut, Radio, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { USERS, DIRECT_MESSAGES } from '@/data';
+import { StatusPicker } from '@/components/StatusPicker';
 
 interface ChannelRailProps {
   server?: Server;
@@ -14,6 +15,7 @@ interface ChannelRailProps {
   onSelectChannel: (id: string) => void;
   onJoinVoice: (id: string) => void;
   onOpenSettings: () => void;
+  onOpenServerSettings?: () => void;
   isHome?: boolean;
 }
 
@@ -27,6 +29,7 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
   onSelectChannel, 
   onJoinVoice,
   onOpenSettings,
+  onOpenServerSettings,
   isHome 
 }) => {
   
@@ -56,9 +59,16 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
         <div className="flex items-center gap-2 overflow-hidden">
             <h2 className="font-bold theme-text truncate micro-label text-sm tracking-widest">{isHome ? 'System Hub' : server?.name}</h2>
         </div>
-        <button onClick={onToggleCollapse} className="theme-text-dim hover:text-primary transition-colors" aria-label="Collapse Channel List">
-            <PanelLeftClose size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          {!isHome && onOpenServerSettings && (
+            <button onClick={onOpenServerSettings} className="theme-text-dim hover:text-primary transition-colors" aria-label="Server Settings">
+              <Settings size={16} />
+            </button>
+          )}
+          <button onClick={onToggleCollapse} className="theme-text-dim hover:text-primary transition-colors" aria-label="Collapse Channel List">
+              <PanelLeftClose size={18} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8 no-scrollbar">
@@ -139,20 +149,50 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
       )}
 
       {/* User Footer */}
-      <div className="p-4 bg-bg-0/50 border-t border-white/5 flex items-center gap-3">
-        <button className="relative group cursor-pointer" onClick={onOpenSettings} aria-label="User Settings">
-            <img src={currentUser.avatar} className="w-10 h-10 rounded-full border border-white/10 group-hover:border-primary transition-colors" alt="My Avatar" />
-            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-accent-success border-2 border-bg-0 shadow-[0_0_5px_#05FFA1]"></div>
-        </button>
-        <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold truncate text-white tracking-tight">{currentUser.username}</div>
-            <div className="text-[9px] font-mono text-white/40">ID // {currentUser.id.toUpperCase()}</div>
-        </div>
-        <div className="flex gap-1">
-            <button aria-label="Mute Microphone" className="p-1.5 text-white/40 hover:text-primary transition-colors"><Mic size={16} /></button>
-            <button aria-label="Deafen Audio" className="p-1.5 text-white/40 hover:text-primary transition-colors"><Headphones size={16} /></button>
-            <button onClick={onOpenSettings} aria-label="Open Settings" className="p-1.5 text-white/40 hover:text-primary transition-colors"><Settings size={16} /></button>
-        </div>
+      <UserFooter currentUser={currentUser} onOpenSettings={onOpenSettings} />
+    </div>
+  );
+};
+
+const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = ({ currentUser, onOpenSettings }) => {
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
+  const [userStatus, setUserStatus] = useState<UserStatus>(currentUser.status);
+  const [customStatus, setCustomStatus] = useState('');
+
+  const statusColors: Record<UserStatus, string> = {
+    online: 'bg-accent-success shadow-[0_0_5px_#05FFA1]',
+    idle: 'bg-accent-warning shadow-[0_0_5px_#FFB020]',
+    dnd: 'bg-accent-danger shadow-[0_0_5px_#FF2A6D]',
+    offline: 'bg-white/20',
+  };
+
+  return (
+    <div className="p-4 bg-bg-0/50 border-t border-white/5 flex items-center gap-3 relative">
+      {showStatusPicker && (
+        <StatusPicker
+          currentStatus={userStatus}
+          customStatus={customStatus}
+          onStatusChange={setUserStatus}
+          onCustomStatusChange={setCustomStatus}
+          onClose={() => setShowStatusPicker(false)}
+        />
+      )}
+      <button className="relative group cursor-pointer" onClick={() => setShowStatusPicker(!showStatusPicker)} aria-label="Set Status">
+        <img src={currentUser.avatar} className="w-10 h-10 rounded-full border border-white/10 group-hover:border-primary transition-colors" alt="My Avatar" />
+        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-bg-0 ${statusColors[userStatus]}`} />
+      </button>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-bold truncate text-white tracking-tight">{currentUser.username}</div>
+        {customStatus ? (
+          <div className="text-[10px] text-primary/70 truncate">{customStatus}</div>
+        ) : (
+          <div className="text-[9px] font-mono text-white/40">ID // {currentUser.id.toUpperCase()}</div>
+        )}
+      </div>
+      <div className="flex gap-1">
+        <button aria-label="Mute Microphone" className="p-1.5 text-white/40 hover:text-primary transition-colors"><Mic size={16} /></button>
+        <button aria-label="Deafen Audio" className="p-1.5 text-white/40 hover:text-primary transition-colors"><Headphones size={16} /></button>
+        <button onClick={onOpenSettings} aria-label="Open Settings" className="p-1.5 text-white/40 hover:text-primary transition-colors"><Settings size={16} /></button>
       </div>
     </div>
   );

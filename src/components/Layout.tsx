@@ -117,7 +117,7 @@ export const Layout: React.FC = () => {
   };
 
   const showMemberSidebar = !isDM && activeServer && !isExplore;
-  const isOverlaySidebar = isMobile || isTablet;
+  const isOverlaySidebar = isMobile; // same as left sidebar — only mobile uses overlay
 
   return (
     <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
@@ -199,26 +199,36 @@ export const Layout: React.FC = () => {
 
                          {showMemberSidebar && (
                            <>
-                             {/* Spacer: full width when expanded on desktop */}
-                             <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isOverlaySidebar ? 'w-[224px]' : 'w-0'}`}></div>
+                             {/* Spacer: reserves layout space when expanded on non-mobile */}
+                             <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isMobile ? 'w-[224px]' : 'w-0'}`}></div>
 
-                             {/* Overlay backdrop + sidebar for tablet/mobile */}
-                             {isOverlaySidebar && !state.memberListCollapsed && (
-                               <>
-                                 <div 
-                                   className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 animate-in fade-in"
-                                   onClick={() => setState(s => ({...s, memberListCollapsed: true}))}
-                                 ></div>
-                                 <div className="absolute right-0 top-0 bottom-0 z-40 h-full w-[224px]">
-                                   <MemberSidebar 
-                                     members={activeServer!.members} 
-                                     collapsed={false}
-                                     onToggleCollapse={() => setState(s => ({...s, memberListCollapsed: true}))}
-                                     isOverlay={true}
-                                   />
-                                 </div>
-                               </>
+                             {/* Mobile overlay backdrop */}
+                             {isMobile && !state.memberListCollapsed && (
+                               <div 
+                                 className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 animate-in fade-in"
+                                 onClick={() => setState(s => ({...s, memberListCollapsed: true}))}
+                               ></div>
                              )}
+
+                             {/* Always-present wrapper — same pattern as left sidebar */}
+                             <div 
+                               className={`
+                                 absolute right-0 top-0 bottom-0 z-40 h-full
+                                 ${isMobile ? 'z-[60] w-[224px] pointer-events-auto' : ''}
+                                 ${!isMobile && (state.memberListCollapsed && !memberListHovered) ? 'w-[10px] pointer-events-auto' : ''}
+                                 ${!isMobile && (!state.memberListCollapsed || memberListHovered) ? 'w-[224px] pointer-events-auto' : ''}
+                               `}
+                               onMouseEnter={() => { if (state.memberListCollapsed && !isMobile) setMemberListHovered(true); }}
+                               onMouseLeave={() => setMemberListHovered(false)}
+                             >
+                               <MemberSidebar 
+                                 members={activeServer!.members} 
+                                 collapsed={state.memberListCollapsed && !memberListHovered && !isMobile}
+                                 onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
+                                 isOverlay={isMobile || (memberListHovered && state.memberListCollapsed)}
+                               />
+                               {isMobile && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10" onClick={() => setState(s => ({...s, memberListCollapsed: true}))}></div>}
+                             </div>
                            </>
                          )}
                     </>
@@ -237,38 +247,6 @@ export const Layout: React.FC = () => {
             )}
           </div>
       </div>
-
-      {/* Member sidebar — desktop hover-to-peek at root level */}
-      {showMemberSidebar && !isOverlaySidebar && (
-        <div 
-          className={`absolute right-0 top-0 bottom-0 z-[55] transition-all duration-300 ease-in-out ${
-            state.memberListCollapsed && !memberListHovered 
-              ? 'w-[12px] pointer-events-auto cursor-pointer' 
-              : 'w-[224px] pointer-events-auto'
-          }`}
-          onMouseEnter={() => { if (state.memberListCollapsed) setMemberListHovered(true); }}
-          onMouseLeave={() => setMemberListHovered(false)}
-        >
-          {/* Thin trigger strip */}
-          <div className={`absolute inset-0 flex items-center justify-center border-l border-white/5 transition-opacity duration-200 ${
-            state.memberListCollapsed && !memberListHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`} style={{ background: 'rgba(10,18,20,0.3)' }}>
-            <div className="w-1 h-6 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}></div>
-          </div>
-
-          {/* Full sidebar panel */}
-          <div className={`h-full transition-opacity duration-200 ${
-            state.memberListCollapsed && !memberListHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'
-          }`}>
-            <MemberSidebar 
-              members={activeServer!.members} 
-              collapsed={false}
-              onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
-              isOverlay={memberListHovered && state.memberListCollapsed}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

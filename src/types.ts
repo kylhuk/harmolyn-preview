@@ -24,6 +24,7 @@ export interface Message {
   isSystem?: boolean;
   pinned?: boolean;
   replyToId?: string;
+  editedAt?: string;
 }
 
 export interface Channel {

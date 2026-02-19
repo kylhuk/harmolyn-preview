@@ -218,29 +218,32 @@ export const Layout: React.FC = () => {
                                ></div>
                              )}
 
-                             {/* Single unified hover zone + sidebar container (desktop only) */}
-                             <div 
-                                className={`absolute right-0 top-0 bottom-0 z-40 h-full transition-all duration-200 ${
-                                  state.memberListCollapsed && !memberListHovered ? 'w-[12px] cursor-pointer' : 'w-[280px]'
-                                }`}
-                                onMouseEnter={() => { if (!isOverlaySidebar && state.memberListCollapsed) setMemberListHovered(true); }}
-                                onMouseLeave={() => setMemberListHovered(false)}
-                                onClick={() => { if (state.memberListCollapsed && !memberListHovered) setState(s => ({...s, memberListCollapsed: false})); }}
-                             >
-                                {/* Collapsed indicator strip */}
-                                {state.memberListCollapsed && !memberListHovered && (
-                                  <div className="w-full h-full flex items-center justify-center bg-bg-1/50 border-l border-white/5">
-                                    <div className="w-1 h-8 bg-white/10 rounded-full"></div>
-                                  </div>
-                                )}
+                             {/* Hover trigger — sits at the absolute right edge of the viewport-level layout */}
+                             {state.memberListCollapsed && !memberListHovered && !isOverlaySidebar && (
+                               <div 
+                                 className="fixed right-0 top-0 bottom-0 w-[14px] z-[60] cursor-pointer"
+                                 onMouseEnter={() => setMemberListHovered(true)}
+                               >
+                                 <div className="w-full h-full flex items-center justify-center bg-bg-1/30 border-l border-white/5">
+                                   <div className="w-1 h-8 bg-white/10 rounded-full"></div>
+                                 </div>
+                               </div>
+                             )}
 
-                                <MemberSidebar 
-                                    members={activeServer.members} 
-                                    collapsed={state.memberListCollapsed && !memberListHovered}
-                                    onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
-                                    isOverlay={isOverlaySidebar}
-                                />
-                             </div>
+                             {/* Expanded sidebar (permanent or hover-peeked) */}
+                             {(!state.memberListCollapsed || memberListHovered) && (
+                               <div 
+                                 className="fixed right-0 top-0 bottom-0 z-[55] w-[280px]"
+                                 onMouseLeave={() => setMemberListHovered(false)}
+                               >
+                                 <MemberSidebar 
+                                     members={activeServer.members} 
+                                     collapsed={false}
+                                     onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
+                                     isOverlay={isOverlaySidebar || (state.memberListCollapsed && memberListHovered)}
+                                 />
+                               </div>
+                             )}
                            </>
                         )}
                     </>

@@ -118,7 +118,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed
                   initial={{ opacity: 0, x: 12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-r1 hover:bg-white/5 transition-all group cursor-pointer relative"
+                  className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-r1 hover:bg-white/5 active:bg-white/8 transition-all group cursor-pointer relative min-h-[48px]"
                 >
                   <div className="relative">
                     <img src={u.avatar} className="w-[26px] h-[26px] rounded-r1 border theme-border grayscale-[0.3] group-hover:grayscale-0 transition-all" />

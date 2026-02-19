@@ -92,7 +92,7 @@ export const Layout: React.FC = () => {
     handleResize();
     
     if (window.innerWidth < 1100) {
-        setState(s => ({...s, memberListCollapsed: true}));
+        setState(s => ({...s, memberListCollapsed: true, channelListCollapsed: true}));
     }
 
     window.addEventListener('resize', handleResize);
@@ -220,8 +220,8 @@ export const Layout: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Side Rail: Hidden on Mobile */}
-      {!isMobile && (
+      {/* Side Rail: Hidden on Mobile & Tablet (they use Bottom Dock) */}
+      {!isMobile && !isTablet && (
         <div className="relative z-50">
             <ServerRail 
             servers={SERVERS} 
@@ -234,30 +234,35 @@ export const Layout: React.FC = () => {
 
       <div className="flex-1 flex overflow-hidden relative">
           {/* Channel list */}
-          {!isExplore && (!isMobile || state.mobileMenuOpen) && (
+          {!isExplore && ((!isMobile && !isTablet) || state.mobileMenuOpen) && (
             <>
                 {/* Spacer: reserves layout space when expanded on desktop */}
-                <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.channelListCollapsed && !isMobile ? 'w-[224px]' : 'w-0'}`}></div>
+                <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.channelListCollapsed && !isMobile && !isTablet ? 'w-[224px]' : 'w-0'}`}></div>
+
+                {/* Overlay backdrop on mobile/tablet */}
+                {(isMobile || isTablet) && (
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[55] animate-in fade-in" onClick={() => setState(s => ({...s, mobileMenuOpen: false, channelListCollapsed: true}))}></div>
+                )}
 
                 {/* Always-present wrapper */}
                 <div 
                     className={`
-                        absolute left-0 top-0 bottom-0 z-40 h-full
-                        ${isMobile ? 'z-[60] w-[224px] pointer-events-auto' : ''}
-                        ${!isMobile && (state.channelListCollapsed && !channelListHovered) ? 'w-[10px] pointer-events-auto' : ''}
-                        ${!isMobile && (!state.channelListCollapsed || channelListHovered) ? 'w-[224px] pointer-events-auto' : ''}
+                        absolute left-0 top-0 bottom-0 z-[60] h-full
+                        ${(isMobile || isTablet) ? 'w-[224px] pointer-events-auto' : ''}
+                        ${!(isMobile || isTablet) && (state.channelListCollapsed && !channelListHovered) ? 'w-[10px] pointer-events-auto' : ''}
+                        ${!(isMobile || isTablet) && (!state.channelListCollapsed || channelListHovered) ? 'w-[224px] pointer-events-auto' : ''}
                     `}
-                    onMouseEnter={handleChannelEnter}
-                    onMouseLeave={handleChannelLeave}
+                    onMouseEnter={!(isMobile || isTablet) ? handleChannelEnter : undefined}
+                    onMouseLeave={!(isMobile || isTablet) ? handleChannelLeave : undefined}
                 >
                     <ChannelRail 
                         server={activeServer}
                         activeChannelId={state.activeChannelId}
                         currentUser={CURRENT_USER}
                         connectedVoiceChannelId={state.connectedVoiceChannelId}
-                        collapsed={state.channelListCollapsed && !channelListHovered && !isMobile}
+                        collapsed={!(isMobile || isTablet) && state.channelListCollapsed && !channelListHovered}
                         onToggleCollapse={() => setState(s => ({...s, channelListCollapsed: !s.channelListCollapsed, mobileMenuOpen: false}))}
-                        onSelectChannel={id => { setState(s => ({...s, activeChannelId: id, mobileMenuOpen: false})); setShowFriends(false); }}
+                        onSelectChannel={id => { setState(s => ({...s, activeChannelId: id, mobileMenuOpen: false, channelListCollapsed: (isMobile || isTablet) ? true : s.channelListCollapsed})); setShowFriends(false); }}
                         onJoinVoice={handleJoinVoice}
                         onOpenSettings={() => setState(s => ({...s, showSettings: true}))}
                         onOpenServerSettings={!isHome && activeServer ? () => setState(s => ({...s, viewMode: 'server-settings'})) : undefined}
@@ -266,7 +271,6 @@ export const Layout: React.FC = () => {
                         onOpenActivities={() => setState(s => ({...s, showActivities: true}))}
                         isHome={isHome}
                     />
-                    {isMobile && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10" onClick={() => setState(s => ({...s, mobileMenuOpen: false}))}></div>}
                 </div>
             </>
           )}
@@ -295,55 +299,56 @@ export const Layout: React.FC = () => {
 
                          {showMemberSidebar && (
                            <>
-                             {/* Spacer: reserves layout space when expanded on non-mobile */}
-                             <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isMobile ? 'w-[224px]' : 'w-0'}`}></div>
+                             {/* Spacer: reserves layout space when expanded on desktop */}
+                             <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isMobile && !isTablet ? 'w-[224px]' : 'w-0'}`}></div>
 
-                             {/* Mobile overlay backdrop */}
-                             {isMobile && !state.memberListCollapsed && (
+                             {/* Mobile/tablet overlay backdrop */}
+                             {(isMobile || isTablet) && !state.memberListCollapsed && (
                                <div 
                                  className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 animate-in fade-in"
                                  onClick={() => setState(s => ({...s, memberListCollapsed: true}))}
                                ></div>
                              )}
 
-                             {/* Always-present wrapper — same pattern as left sidebar */}
-                             <div 
-                               className={`
-                                 absolute right-0 top-0 bottom-0 z-40 h-full
-                                 ${isMobile ? 'z-[60] w-[224px] pointer-events-auto' : ''}
-                                 ${!isMobile && (state.memberListCollapsed && !memberListHovered) ? 'w-[10px] pointer-events-auto' : ''}
-                                 ${!isMobile && (!state.memberListCollapsed || memberListHovered) ? 'w-[224px] pointer-events-auto' : ''}
-                               `}
-                               onMouseEnter={handleMemberEnter}
-                               onMouseLeave={handleMemberLeave}
-                             >
-                               <MemberSidebar 
-                                 members={activeServer!.members} 
-                                 collapsed={state.memberListCollapsed && !memberListHovered && !isMobile}
-                                 onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
-                                 isOverlay={isMobile || (memberListHovered && state.memberListCollapsed)}
-                               />
-                               {isMobile && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10" onClick={() => setState(s => ({...s, memberListCollapsed: true}))}></div>}
-                             </div>
+                             {/* Sidebar wrapper — hidden on mobile/tablet when collapsed */}
+                             {(!(isMobile || isTablet) || !state.memberListCollapsed) && (
+                               <div 
+                                 className={`
+                                   absolute right-0 top-0 bottom-0 z-40 h-full
+                                   ${(isMobile || isTablet) ? 'z-[60] w-[224px] pointer-events-auto' : ''}
+                                   ${!(isMobile || isTablet) && (state.memberListCollapsed && !memberListHovered) ? 'w-[10px] pointer-events-auto' : ''}
+                                   ${!(isMobile || isTablet) && (!state.memberListCollapsed || memberListHovered) ? 'w-[224px] pointer-events-auto' : ''}
+                                 `}
+                                 onMouseEnter={!(isMobile || isTablet) ? handleMemberEnter : undefined}
+                                 onMouseLeave={!(isMobile || isTablet) ? handleMemberLeave : undefined}
+                               >
+                                 <MemberSidebar 
+                                   members={activeServer!.members} 
+                                   collapsed={!(isMobile || isTablet) && state.memberListCollapsed && !memberListHovered}
+                                   onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
+                                   isOverlay={(isMobile || isTablet) || (memberListHovered && state.memberListCollapsed)}
+                                 />
+                               </div>
+                             )}
                            </>
                          )}
                     </>
                 )}
             </div>
 
-            {/* Bottom Dock for Mobile Views */}
-            {isMobile && (
+            {/* Bottom Dock for Mobile & Tablet */}
+            {(isMobile || isTablet) && (
               <motion.div 
-                initial={{ y: 70 }}
+                initial={{ y: 88 }}
                 animate={{ y: 0 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="h-[70px] w-full glass-panel flex items-center justify-around px-3 border-t border-white/5 pb-safe z-50 relative"
+                className="h-[88px] w-full glass-panel flex items-center justify-around px-4 border-t border-white/5 pb-safe z-50 relative"
               >
-                 <BottomNavItem active={isHome} onClick={() => handleServerSelect('home')} icon={<Home size={20} />} label="HOME" />
-                 <BottomNavItem active={!isHome && !isExplore} onClick={() => setState(s => ({...s, mobileMenuOpen: true}))} icon={<Menu size={20} />} label="CHANNELS" />
-                 <BottomNavItem active={false} onClick={() => setState(s => ({...s, showCreateServer: true}))} icon={<div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-bg-0 shadow-glow -mt-5"><UsersIcon size={20} /></div>} label="CREATE" isCore />
-                 <BottomNavItem active={isExplore} onClick={() => handleServerSelect('explore')} icon={<Compass size={20} />} label="EXPLORE" />
-                 <BottomNavItem active={false} onClick={() => setState(s => ({...s, showSettings: true}))} icon={<SettingsIcon size={20} />} label="SETTINGS" />
+                 <BottomNavItem active={isHome} onClick={() => handleServerSelect('home')} icon={<Home size={22} />} label="HOME" />
+                 <BottomNavItem active={!isHome && !isExplore} onClick={() => setState(s => ({...s, mobileMenuOpen: true}))} icon={<Menu size={22} />} label="CHANNELS" />
+                 <BottomNavItem active={false} onClick={() => setState(s => ({...s, showCreateServer: true}))} icon={<div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-bg-0 shadow-glow -mt-6"><UsersIcon size={22} /></div>} label="CREATE" isCore />
+                 <BottomNavItem active={isExplore} onClick={() => handleServerSelect('explore')} icon={<Compass size={22} />} label="EXPLORE" />
+                 <BottomNavItem active={false} onClick={() => setState(s => ({...s, showSettings: true}))} icon={<SettingsIcon size={22} />} label="SETTINGS" />
               </motion.div>
             )}
           </div>
@@ -353,13 +358,12 @@ export const Layout: React.FC = () => {
 };
 
 const BottomNavItem = ({ active, onClick, icon, label, isCore = false }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string, isCore?: boolean }) => (
-    <div 
+    <button 
       onClick={onClick} 
-      className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all ${active ? 'text-primary' : 'text-white/40'}`}
-      role="button"
+      className={`flex flex-col items-center justify-center gap-1 min-w-[48px] min-h-[48px] px-2 py-1 rounded-r1 transition-all active:scale-95 ${active ? 'text-primary' : 'text-white/40 active:text-white/60'}`}
       aria-label={label}
     >
-        <div className={`transition-transform ${active ? 'scale-110' : 'hover:scale-105'}`}>{icon}</div>
-        {!isCore && <span className="micro-label text-[7px] font-bold tracking-widest">{label}</span>}
-    </div>
+        <div className={`transition-transform ${active ? 'scale-110' : ''}`}>{icon}</div>
+        {!isCore && <span className="micro-label text-[8px] font-bold tracking-widest">{label}</span>}
+    </button>
 );

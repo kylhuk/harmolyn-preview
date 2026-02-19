@@ -71,7 +71,11 @@ function buildDefaultItems(target: HTMLElement): ContextMenuSection[] {
         {
           label: 'Search for Text',
           icon: <Search size={13} />,
-          onClick: () => window.open(`https://www.google.com/search?q=${encodeURIComponent(selectedText)}`, '_blank'),
+          onClick: () => {
+            if (window.confirm('This will send selected text to an external search engine. Continue?')) {
+              window.open(`https://duckduckgo.com/?q=${encodeURIComponent(selectedText)}`, '_blank');
+            }
+          },
         },
       ],
     });

@@ -50,6 +50,16 @@ const Spoiler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
+/** Only allow http: and https: protocols to prevent javascript:/data: injection */
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url, window.location.href);
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 function renderInline(text: string): React.ReactNode[] {
   // Process inline patterns: bold, italic, inline code, links, spoilers
   const inlineRegex = /(\|\|(.+?)\|\|)|(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+?)`)|(\[([^\]]+?)\]\(([^)]+?)\))|(https?:\/\/[^\s<]+)/g;
@@ -77,12 +87,16 @@ function renderInline(text: string): React.ReactNode[] {
         <code key={`c-${m.index}`} className="bg-white/10 border border-white/10 rounded px-1.5 py-0.5 font-mono text-[0.85em] text-primary/80">{m[8]}</code>
       );
     } else if (m[9]) {
-      // [link](url)
-      nodes.push(
-        <a key={`l-${m.index}`} href={m[11]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline hover:brightness-125 transition-all">{m[10]}</a>
-      );
+      // [link](url) — validate protocol
+      if (isSafeUrl(m[11])) {
+        nodes.push(
+          <a key={`l-${m.index}`} href={m[11]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline hover:brightness-125 transition-all">{m[10]}</a>
+        );
+      } else {
+        nodes.push(<span key={`l-${m.index}`} className="text-accent-danger opacity-70">[unsafe link: {m[10]}]</span>);
+      }
     } else if (m[12]) {
-      // bare URL
+      // bare URL — already matched https?:// so safe by regex
       nodes.push(
         <a key={`u-${m.index}`} href={m[12]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline hover:brightness-125 transition-all">{m[12]}</a>
       );

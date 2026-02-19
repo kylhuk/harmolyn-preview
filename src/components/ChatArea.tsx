@@ -6,7 +6,11 @@ import { renderMarkdown } from '@/utils/markdown';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { MediaEmbed } from '@/components/MediaEmbed';
-import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose } from 'lucide-react';
+import { ForwardMessageModal } from '@/components/ForwardMessageModal';
+import { PollCreator } from '@/components/PollCreator';
+import { PollMessage } from '@/components/PollMessage';
+import { useFeature } from '@/hooks/useFeature';
+import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3 } from 'lucide-react';
 
 // Action button sub-component for message interactions
 const ActionBtn = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) => (
@@ -168,6 +172,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [messagesState, setMessagesState] = useState<Message[]>(messages);
   const [mutedUsers, setMutedUsers] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, msgId: string } | null>(null);
+  const [forwardingContent, setForwardingContent] = useState<string | null>(null);
+  const [showPollCreator, setShowPollCreator] = useState(false);
+  const [polls, setPolls] = useState<Map<string, { question: string; options: { text: string; votes: number }[]; totalVotes: number }>>(new Map());
+
+  const hasForwarding = useFeature('messageForwarding');
+  const hasPolls = useFeature('polls');
 
   useEffect(() => {
     setMessagesState(messages);
@@ -660,6 +670,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   </div>
                 )}
                 
+                {/* Poll embed */}
+                {polls.has(msg.id) && (
+                  <PollMessage
+                    question={polls.get(msg.id)!.question}
+                    options={polls.get(msg.id)!.options}
+                    totalVotes={polls.get(msg.id)!.totalVotes}
+                    votedIndex={null}
+                  />
+                )}
+
                 {/* Media Embeds */}
                 <MediaEmbed content={msg.content} />
                 
@@ -678,6 +698,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       <ActionBtn icon={<MessageSquare size={14} />} label="Reply" onClick={() => setReplyingTo(msg)} />
                       {isMe && <ActionBtn icon={<Pencil size={14} />} label="Edit Message" onClick={() => startEdit(msg)} />}
                       <ActionBtn icon={<Pin size={14} className={msg.pinned ? 'text-primary' : ''} />} label={msg.pinned ? 'Unpin' : 'Pin'} onClick={() => togglePin(msg.id)} />
+                      {hasForwarding && <ActionBtn icon={<Forward size={14} />} label="Forward" onClick={() => setForwardingContent(msg.content)} />}
                       <ActionBtn icon={<Trash2 size={14} />} label="Delete Message" onClick={() => deleteMessage(msg.id)} />
                       <ActionBtn 
                         icon={<MicOff size={14} className={mutedUsers.has(msg.userId) ? "text-accent-danger" : ""} />} 
@@ -793,6 +814,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <Pencil size={12} className="text-white/40" /> Edit Message
                   </button>
                 )}
+                {hasForwarding && (
+                  <button 
+                    onClick={() => {
+                      const msg = messagesState.find(m => m.id === contextMenu.msgId);
+                      if (msg) { setForwardingContent(msg.content); setContextMenu(null); }
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <Forward size={12} className="text-white/40" /> Forward Message
+                  </button>
+                )}
                 <div className="h-[1px] bg-white/5 my-0.5"></div>
                 <button 
                     onClick={() => {
@@ -851,6 +883,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             
             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
             <button onClick={() => fileInputRef.current?.click()} className="p-3 text-white/30 hover:text-primary transition-colors" aria-label="Add attachment"><PlusCircle size={20} /></button>
+            {hasPolls && (
+              <button onClick={() => setShowPollCreator(!showPollCreator)} className={`p-2 transition-colors ${showPollCreator ? 'text-primary' : 'text-white/30 hover:text-primary'}`} aria-label="Create Poll">
+                <BarChart3 size={18} />
+              </button>
+            )}
             
             <input 
                 type="text" 
@@ -876,6 +913,37 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
         </div>
       </div>
+
+      {/* Poll Creator */}
+      {showPollCreator && hasPolls && (
+        <PollCreator
+          onSubmit={(question, options) => {
+            const pollId = `poll-${Date.now()}`;
+            setPolls(prev => new Map(prev).set(pollId, {
+              question,
+              options: options.map(o => ({ text: o, votes: 0 })),
+              totalVotes: 0,
+            }));
+            const pollMsg: Message = {
+              id: pollId,
+              userId: 'me',
+              content: `📊 **Poll:** ${question}`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            setMessagesState(prev => [...prev, pollMsg]);
+            setShowPollCreator(false);
+          }}
+          onClose={() => setShowPollCreator(false)}
+        />
+      )}
+
+      {/* Forward Modal */}
+      {forwardingContent !== null && hasForwarding && (
+        <ForwardMessageModal
+          messageContent={forwardingContent}
+          onClose={() => setForwardingContent(null)}
+        />
+      )}
     </div>
   );
 };

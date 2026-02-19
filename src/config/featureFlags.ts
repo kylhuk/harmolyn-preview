@@ -12,7 +12,7 @@ export const FEATURES = {
   serverNavigation: true,
   mobileBottomNav: true,
   contextMenus: true,
-  quickSwitcher: false,
+  quickSwitcher: true,
   serverFolders: false,
 
   // ─── Auth ────────────────────────────────────────────────
@@ -39,9 +39,9 @@ export const FEATURES = {
   emojiPicker: true,
   typingIndicators: true,
   linkEmbeds: true,
-  spoilerText: false,
-  messageForwarding: false,
-  polls: false,
+  spoilerText: true,
+  messageForwarding: true,
+  polls: true,
   threads: false,
   voiceMessages: false,
   slashCommands: false,

@@ -148,21 +148,18 @@ export const Layout: React.FC = () => {
           {/* Channel list */}
           {!isExplore && (!isMobile || state.mobileMenuOpen) && (
             <>
-                <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.channelListCollapsed && !isMobile ? 'w-[280px]' : 'w-[6px]'}`}></div>
+                {/* Spacer: reserves layout space when expanded on desktop */}
+                <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.channelListCollapsed && !isMobile ? 'w-[280px]' : 'w-0'}`}></div>
 
-                {/* Narrow hover trigger strip — only active when collapsed */}
-                {state.channelListCollapsed && !isMobile && (
-                  <div
-                    className="absolute left-0 top-0 bottom-0 w-[6px] z-[41]"
-                    onMouseEnter={() => setChannelListHovered(true)}
-                  />
-                )}
-
+                {/* Always-present wrapper — pointer-events control prevents invisible blocking */}
                 <div 
                     className={`
-                        absolute left-0 top-0 bottom-0 z-40 h-full w-[280px]
-                        ${isMobile ? 'z-[60]' : ''} 
+                        absolute left-0 top-0 bottom-0 z-40 h-full
+                        ${isMobile ? 'z-[60] w-[280px] pointer-events-auto' : ''}
+                        ${!isMobile && (state.channelListCollapsed && !channelListHovered) ? 'w-[12px] pointer-events-auto' : ''}
+                        ${!isMobile && (!state.channelListCollapsed || channelListHovered) ? 'w-[280px] pointer-events-auto' : ''}
                     `}
+                    onMouseEnter={() => { if (state.channelListCollapsed && !isMobile) setChannelListHovered(true); }}
                     onMouseLeave={() => setChannelListHovered(false)}
                 >
                     <ChannelRail 
@@ -236,47 +233,35 @@ export const Layout: React.FC = () => {
           </div>
       </div>
 
-      {/* Member sidebar hover trigger + panel — at root level to avoid overflow clipping */}
+      {/* Member sidebar — single always-rendered wrapper at root to avoid overflow clipping */}
       {showMemberSidebar && !isOverlaySidebar && (
-        <>
-          {state.memberListCollapsed && !memberListHovered && (
-            <div 
-              className="absolute right-0 top-0 bottom-0 w-[24px] z-[60] cursor-pointer"
-              onMouseEnter={() => setMemberListHovered(true)}
-            >
-              <div className="w-full h-full flex items-center justify-center border-l border-white/5" style={{ background: 'rgba(10,18,20,0.3)' }}>
-                <div className="w-1 h-8 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}></div>
-              </div>
-            </div>
-          )}
-
-          {memberListHovered && state.memberListCollapsed && (
-            <div 
-              className="absolute right-0 top-0 bottom-0 z-[55] w-[280px]"
-              onMouseLeave={() => setMemberListHovered(false)}
-            >
-              <MemberSidebar 
-                members={activeServer!.members} 
-                collapsed={false}
-                onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
-                isOverlay={true}
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Permanently expanded member sidebar (not collapsed) */}
-      {showMemberSidebar && !state.memberListCollapsed && !isOverlaySidebar && (
         <div 
-          className="absolute right-0 top-0 bottom-0 z-[55] w-[280px]"
+          className={`absolute right-0 top-0 bottom-0 z-[55] transition-all duration-300 ease-in-out ${
+            state.memberListCollapsed && !memberListHovered 
+              ? 'w-[16px] pointer-events-auto cursor-pointer' 
+              : 'w-[280px] pointer-events-auto'
+          }`}
+          onMouseEnter={() => { if (state.memberListCollapsed) setMemberListHovered(true); }}
+          onMouseLeave={() => setMemberListHovered(false)}
         >
-          <MemberSidebar 
-            members={activeServer!.members} 
-            collapsed={false}
-            onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
-            isOverlay={false}
-          />
+          {/* Thin trigger strip — visible only when fully collapsed */}
+          <div className={`absolute inset-0 flex items-center justify-center border-l border-white/5 transition-opacity duration-200 ${
+            state.memberListCollapsed && !memberListHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`} style={{ background: 'rgba(10,18,20,0.3)' }}>
+            <div className="w-1 h-8 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}></div>
+          </div>
+
+          {/* Full sidebar panel — visible when expanded or hovered */}
+          <div className={`h-full transition-opacity duration-200 ${
+            state.memberListCollapsed && !memberListHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}>
+            <MemberSidebar 
+              members={activeServer!.members} 
+              collapsed={false}
+              onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
+              isOverlay={memberListHovered && state.memberListCollapsed}
+            />
+          </div>
         </div>
       )}
     </div>

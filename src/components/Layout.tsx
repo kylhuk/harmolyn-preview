@@ -6,6 +6,7 @@ import { ChatArea } from '@/components/ChatArea';
 import { MemberSidebar } from '@/components/MemberSidebar';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { ServerExplorer } from '@/components/ServerExplorer';
+import { ServerSettingsScreen } from '@/components/ServerSettingsScreen';
 import { CreateServerModal } from '@/components/CreateServerModal';
 import { FriendsPanel } from '@/components/FriendsPanel';
 import { SERVERS, USERS, MOCK_MESSAGES, CURRENT_USER, DIRECT_MESSAGES } from '@/data';
@@ -126,6 +127,9 @@ export const Layout: React.FC = () => {
   return (
     <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
       {state.showSettings && <SettingsScreen user={CURRENT_USER} onClose={() => setState(s => ({...s, showSettings: false}))} />}
+      {state.viewMode === 'server-settings' && activeServer && (
+        <ServerSettingsScreen server={activeServer} onClose={() => setState(s => ({...s, viewMode: 'chat'}))} />
+      )}
       {state.showCreateServer && <CreateServerModal onClose={() => setState(s => ({...s, showCreateServer: false}))} />}
 
       {/* Side Rail: Hidden on Mobile */}
@@ -164,6 +168,7 @@ export const Layout: React.FC = () => {
                         onSelectChannel={id => { setState(s => ({...s, activeChannelId: id, mobileMenuOpen: false})); setShowFriends(false); }}
                         onJoinVoice={handleJoinVoice}
                         onOpenSettings={() => setState(s => ({...s, showSettings: true}))}
+                        onOpenServerSettings={!isHome && activeServer ? () => setState(s => ({...s, viewMode: 'server-settings'})) : undefined}
                         isHome={isHome}
                     />
                     {isMobile && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm -z-10" onClick={() => setState(s => ({...s, mobileMenuOpen: false}))}></div>}

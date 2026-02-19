@@ -124,10 +124,10 @@ body {
   box-shadow: 0 0 0 2px rgba(19, 221, 236, 0.3), var(--shadow-glow-sm);
 }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
-::-webkit-scrollbar-thumb { background: rgba(19, 221, 236, 0.2); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #13DDEC; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(19, 221, 236, 0.15); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(19, 221, 236, 0.35); }
 
 .micro-label {
   font-size: 10px;
@@ -144,7 +144,17 @@ body {
 .glass-panel {
   background: rgba(16, 25, 27, 0.65);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Neon gradient utilities */
+.bg-neon-primary {
+  background: linear-gradient(135deg, #13DDEC 0%, #00A8CC 100%);
+}
+
+.bg-chroma-glow {
+  background: radial-gradient(circle at 50% 0%, rgba(19, 221, 236, 0.15) 0%, rgba(16, 32, 34, 0) 70%);
 }
 
 .no-scrollbar::-webkit-scrollbar {

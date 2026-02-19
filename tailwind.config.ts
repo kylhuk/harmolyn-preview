@@ -71,6 +71,17 @@ export default {
           1: '#0A1214',
           2: '#102022',
         },
+        surface: {
+          dark: '#111718',
+        },
+        'primary-dark': '#0BBDC9',
+        'primary-dim': '#0A7A85',
+        stroke: {
+          subtle: 'rgba(255, 255, 255, 0.05)',
+          DEFAULT: 'rgba(255, 255, 255, 0.08)',
+          strong: 'rgba(255, 255, 255, 0.12)',
+          primary: 'rgba(19, 221, 236, 0.30)',
+        },
         glass: {
           card: 'rgba(17, 23, 24, 0.70)',
           panel: 'rgba(16, 25, 27, 0.65)',

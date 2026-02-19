@@ -9,6 +9,8 @@ import { ServerExplorer } from '@/components/ServerExplorer';
 import { ServerSettingsScreen } from '@/components/ServerSettingsScreen';
 import { CreateServerModal } from '@/components/CreateServerModal';
 import { FriendsPanel } from '@/components/FriendsPanel';
+import { QuickSwitcher } from '@/components/QuickSwitcher';
+import { useFeature } from '@/hooks/useFeature';
 import { SERVERS, USERS, MOCK_MESSAGES, CURRENT_USER, DIRECT_MESSAGES } from '@/data';
 import { Channel, AppState, MessageLayout } from '@/types';
 import { Home, Compass, MessageSquare, Users as UsersIcon, Settings as SettingsIcon, Menu } from 'lucide-react';
@@ -30,6 +32,8 @@ export const Layout: React.FC = () => {
   });
 
   const [showFriends, setShowFriends] = useState(true);
+  const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
+  const hasQuickSwitcher = useFeature('quickSwitcher');
 
   // Theme State
   const [bgSeed, setBgSeed] = useState<string>('nexus-default');
@@ -65,6 +69,31 @@ export const Layout: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Ctrl+K Quick Switcher
+  useEffect(() => {
+    if (!hasQuickSwitcher) return;
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowQuickSwitcher(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [hasQuickSwitcher]);
+
+  const handleQuickNavigate = (serverId: string, channelId: string) => {
+    setState(prev => ({
+      ...prev,
+      activeServerId: serverId,
+      activeChannelId: channelId,
+      viewMode: serverId === 'explore' ? 'explorer' : 'chat',
+      mobileMenuOpen: false,
+    }));
+    if (serverId === 'home' && !channelId) setShowFriends(true);
+    else if (serverId === 'home') setShowFriends(false);
+  };
 
   const activeServer = SERVERS.find(s => s.id === state.activeServerId);
   const isHome = state.activeServerId === 'home';
@@ -117,7 +146,7 @@ export const Layout: React.FC = () => {
   };
 
   const showMemberSidebar = !isDM && activeServer && !isExplore;
-  const isOverlaySidebar = isMobile; // same as left sidebar — only mobile uses overlay
+  const isOverlaySidebar = isMobile;
 
   return (
     <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
@@ -126,6 +155,9 @@ export const Layout: React.FC = () => {
         <ServerSettingsScreen server={activeServer} onClose={() => setState(s => ({...s, viewMode: 'chat'}))} />
       )}
       {state.showCreateServer && <CreateServerModal onClose={() => setState(s => ({...s, showCreateServer: false}))} />}
+      {showQuickSwitcher && hasQuickSwitcher && (
+        <QuickSwitcher onClose={() => setShowQuickSwitcher(false)} onNavigate={handleQuickNavigate} />
+      )}
 
       {/* Side Rail: Hidden on Mobile */}
       {!isMobile && (

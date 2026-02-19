@@ -32,9 +32,27 @@ export function renderMarkdown(text: string): React.ReactNode {
   return parts.length === 1 ? parts[0] : <>{parts}</>;
 }
 
+// Spoiler component: click to reveal
+const Spoiler = ({ children }: { children: React.ReactNode }) => {
+  const [revealed, setRevealed] = React.useState(false);
+  return (
+    <span
+      onClick={() => setRevealed(true)}
+      className={`rounded px-1 py-0.5 cursor-pointer transition-all duration-300 inline ${
+        revealed
+          ? 'bg-white/10 text-white/90'
+          : 'bg-white/10 text-transparent select-none hover:bg-white/15'
+      }`}
+      title={revealed ? undefined : 'Click to reveal spoiler'}
+    >
+      {children}
+    </span>
+  );
+};
+
 function renderInline(text: string): React.ReactNode[] {
-  // Process inline patterns: bold, italic, inline code, links
-  const inlineRegex = /(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+?)`)|(\[([^\]]+?)\]\(([^)]+?)\))|(https?:\/\/[^\s<]+)/g;
+  // Process inline patterns: bold, italic, inline code, links, spoilers
+  const inlineRegex = /(\|\|(.+?)\|\|)|(\*\*(.+?)\*\*)|(\*(.+?)\*)|(`([^`]+?)`)|(\[([^\]]+?)\]\(([^)]+?)\))|(https?:\/\/[^\s<]+)/g;
   const nodes: React.ReactNode[] = [];
   let lastIdx = 0;
   let m: RegExpExecArray | null;
@@ -45,25 +63,28 @@ function renderInline(text: string): React.ReactNode[] {
     }
 
     if (m[1]) {
-      // **bold**
-      nodes.push(<strong key={`b-${m.index}`} className="font-bold text-foreground">{m[2]}</strong>);
+      // ||spoiler||
+      nodes.push(<Spoiler key={`sp-${m.index}`}>{m[2]}</Spoiler>);
     } else if (m[3]) {
-      // *italic*
-      nodes.push(<em key={`i-${m.index}`} className="italic text-white/80">{m[4]}</em>);
+      // **bold**
+      nodes.push(<strong key={`b-${m.index}`} className="font-bold text-foreground">{m[4]}</strong>);
     } else if (m[5]) {
+      // *italic*
+      nodes.push(<em key={`i-${m.index}`} className="italic text-white/80">{m[6]}</em>);
+    } else if (m[7]) {
       // `inline code`
       nodes.push(
-        <code key={`c-${m.index}`} className="bg-white/10 border border-white/10 rounded px-1.5 py-0.5 font-mono text-[0.85em] text-primary/80">{m[6]}</code>
+        <code key={`c-${m.index}`} className="bg-white/10 border border-white/10 rounded px-1.5 py-0.5 font-mono text-[0.85em] text-primary/80">{m[8]}</code>
       );
-    } else if (m[7]) {
+    } else if (m[9]) {
       // [link](url)
       nodes.push(
-        <a key={`l-${m.index}`} href={m[9]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline hover:brightness-125 transition-all">{m[8]}</a>
+        <a key={`l-${m.index}`} href={m[11]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline hover:brightness-125 transition-all">{m[10]}</a>
       );
-    } else if (m[10]) {
+    } else if (m[12]) {
       // bare URL
       nodes.push(
-        <a key={`u-${m.index}`} href={m[10]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline hover:brightness-125 transition-all">{m[10]}</a>
+        <a key={`u-${m.index}`} href={m[12]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline hover:brightness-125 transition-all">{m[12]}</a>
       );
     }
 

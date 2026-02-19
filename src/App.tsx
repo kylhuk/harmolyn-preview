@@ -1,5 +1,10 @@
 import { Layout } from "@/components/Layout";
+import { ContextMenuProvider } from "@/components/GlobalContextMenu";
 
-const App = () => <Layout />;
+const App = () => (
+  <ContextMenuProvider>
+    <Layout />
+  </ContextMenuProvider>
+);
 
 export default App;

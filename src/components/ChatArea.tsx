@@ -16,6 +16,7 @@ import { SearchPanel } from '@/components/SearchPanel';
 import { InboxPanel } from '@/components/InboxPanel';
 import { MentionAutocomplete } from '@/components/MentionAutocomplete';
 import { useFeature } from '@/hooks/useFeature';
+import { useContextMenu } from '@/components/GlobalContextMenu';
 import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3, Link2, ArrowDown, MessageCircle, Inbox } from 'lucide-react';
 
 // Action button sub-component for message interactions
@@ -177,7 +178,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   const [messagesState, setMessagesState] = useState<Message[]>(messages);
   const [mutedUsers, setMutedUsers] = useState<Set<string>>(new Set());
-  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, msgId: string } | null>(null);
   const [forwardingContent, setForwardingContent] = useState<string | null>(null);
   const [showPollCreator, setShowPollCreator] = useState(false);
   const [polls, setPolls] = useState<Map<string, { question: string; options: { text: string; votes: number }[]; totalVotes: number }>>(new Map());
@@ -203,19 +203,41 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const UNREAD_AFTER_INDEX = 8;
 
+  const { showMenu } = useContextMenu();
+
   useEffect(() => {
     setMessagesState(messages);
   }, [messages]);
 
-  useEffect(() => {
-    const handleClickOutside = () => setContextMenu(null);
-    window.addEventListener('click', handleClickOutside);
-    return () => window.removeEventListener('click', handleClickOutside);
-  }, []);
-
   const handleContextMenu = (e: React.MouseEvent, msgId: string) => {
     e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, msgId });
+    (e.nativeEvent as any).__customContextHandled = true;
+
+    const msg = messagesState.find(m => m.id === msgId);
+    if (!msg) return;
+
+    const isMe = msg.userId === 'me';
+    const isMuted = mutedUsers.has(msg.userId);
+
+    const mainItems = [
+      { label: 'Reply', icon: <MessageSquare size={13} />, onClick: () => setReplyingTo(msg) },
+      { label: msg.pinned ? 'Unpin Message' : 'Pin Message', icon: <Pin size={13} />, onClick: () => togglePin(msg.id) },
+      { label: 'Add Reaction', icon: <Smile size={13} />, onClick: () => {} },
+    ];
+    if (isMe) mainItems.push({ label: 'Edit Message', icon: <Pencil size={13} />, onClick: () => startEdit(msg) });
+    if (hasForwarding) mainItems.push({ label: 'Forward Message', icon: <Forward size={13} />, onClick: () => setForwardingContent(msg.content) });
+    if (hasThreads) mainItems.push({ label: 'Create Thread', icon: <MessageCircle size={13} />, onClick: () => setThreadMessage(msg) });
+    if (hasMessageLinks) mainItems.push({ label: 'Copy Message Link', icon: <Link2 size={13} />, onClick: () => copyMessageLink(msg.id) });
+
+    const moderationItems = [
+      { label: isMuted ? 'Unmute User' : 'Mute User', icon: <MicOff size={13} />, onClick: () => toggleMuteUser(msg.userId) },
+      { label: 'Delete Message', icon: <Trash2 size={13} />, onClick: () => deleteMessage(msg.id), danger: true },
+    ];
+
+    showMenu(e.clientX, e.clientY, [
+      { items: mainItems },
+      { items: moderationItems },
+    ]);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -875,92 +897,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         </>
       )}
 
-      {/* Context Menu */}
-      {contextMenu && (
-        <div 
-            className="fixed z-[100] w-48 bg-bg-0 border border-white/10 rounded-r2 shadow-2xl glass-card overflow-hidden animate-in fade-in zoom-in-95 duration-100"
-            style={{ top: contextMenu.y, left: contextMenu.x }}
-        >
-            <div className="p-1 space-y-0.5">
-                <button 
-                    onClick={() => {
-                        const msg = messagesState.find(m => m.id === contextMenu.msgId);
-                        if (msg) { setReplyingTo(msg); setContextMenu(null); }
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
-                >
-                    <MessageSquare size={12} className="text-white/40" /> Reply
-                </button>
-                <button 
-                    onClick={() => { const msg = messagesState.find(m => m.id === contextMenu.msgId); if (msg) { togglePin(msg.id); setContextMenu(null); } }}
-                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
-                >
-                    <Pin size={12} className="text-white/40" /> {messagesState.find(m => m.id === contextMenu.msgId)?.pinned ? 'Unpin Message' : 'Pin Message'}
-                </button>
-                <button className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors">
-                    <Smile size={12} className="text-white/40" /> Add Reaction
-                </button>
-                {messagesState.find(m => m.id === contextMenu.msgId)?.userId === 'me' && (
-                  <button 
-                    onClick={() => {
-                      const msg = messagesState.find(m => m.id === contextMenu.msgId);
-                      if (msg) { startEdit(msg); setContextMenu(null); }
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <Pencil size={12} className="text-white/40" /> Edit Message
-                  </button>
-                )}
-                {hasForwarding && (
-                  <button 
-                    onClick={() => {
-                      const msg = messagesState.find(m => m.id === contextMenu.msgId);
-                      if (msg) { setForwardingContent(msg.content); setContextMenu(null); }
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <Forward size={12} className="text-white/40" /> Forward Message
-                  </button>
-                )}
-                {hasThreads && (
-                  <button 
-                    onClick={() => {
-                      const msg = messagesState.find(m => m.id === contextMenu.msgId);
-                      if (msg) { setThreadMessage(msg); setContextMenu(null); }
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <MessageCircle size={12} className="text-white/40" /> Create Thread
-                  </button>
-                )}
-                {hasMessageLinks && (
-                  <button 
-                    onClick={() => { copyMessageLink(contextMenu.msgId); setContextMenu(null); }}
-                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <Link2 size={12} className="text-white/40" /> Copy Message Link
-                  </button>
-                )}
-                <div className="h-[1px] bg-white/5 my-0.5"></div>
-                <button 
-                    onClick={() => {
-                        const msg = messagesState.find(m => m.id === contextMenu.msgId);
-                        if (msg) toggleMuteUser(msg.userId);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 hover:bg-white/10 rounded-r1 text-white text-xs flex items-center gap-1.5 transition-colors"
-                >
-                    <MicOff size={12} className="text-white/40" /> 
-                    {messagesState.find(m => m.id === contextMenu.msgId) && mutedUsers.has(messagesState.find(m => m.id === contextMenu.msgId)!.userId) ? 'Unmute User' : 'Mute User'}
-                </button>
-                <button 
-                    onClick={() => deleteMessage(contextMenu.msgId)}
-                    className="w-full text-left px-2.5 py-1.5 hover:bg-accent-danger/20 rounded-r1 text-accent-danger text-xs flex items-center gap-1.5 transition-colors"
-                >
-                    <Trash2 size={12} /> Delete Message
-                </button>
-            </div>
-        </div>
-      )}
 
       {/* Input Area */}
       <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6 pt-0 z-10">

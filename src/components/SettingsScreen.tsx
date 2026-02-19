@@ -44,7 +44,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose, o
 
               <div className="h-6"></div>
               <div className="border-t border-white/5 my-3 mx-3"></div>
-              <button className="flex items-center gap-2.5 px-3 py-2 rounded-r1 w-full text-accent-danger hover:bg-accent-danger/10 transition-all micro-label">
+               <button className="flex items-center gap-2.5 px-3 py-2 rounded-r1 w-full text-accent-danger hover:bg-accent-danger/10 transition-all micro-label btn-press">
                  <LogOut size={16} />
                  <span>Log Out</span>
               </button>
@@ -73,7 +73,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose, o
 };
 
 const SettingsItem = ({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) => (
-    <div onClick={onClick} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-r1 cursor-pointer transition-all border ${active ? 'bg-primary/10 border-primary/20 text-white shadow-inner' : 'border-transparent text-white/40 hover:bg-white/5 hover:text-white'}`}>
+    <div onClick={onClick} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-r1 cursor-pointer transition-all border btn-press ${active ? 'bg-primary/10 border-primary/20 text-white shadow-inner' : 'border-transparent text-white/40 hover:bg-white/5 hover:text-white'}`}>
         <div className={active ? 'text-primary' : ''}>{icon}</div>
         <span className="font-bold text-xs tracking-tight">{label}</span>
     </div>

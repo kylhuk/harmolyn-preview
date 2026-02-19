@@ -22,7 +22,7 @@ import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, 
 const ActionBtn = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) => (
   <button 
     onClick={onClick}
-    className="p-1.5 text-white/40 hover:text-primary hover:bg-white/5 rounded-full transition-all focus:outline-none focus:ring-1 focus:ring-primary/50"
+    className="p-1.5 text-white/40 hover:text-primary hover:bg-white/5 rounded-full transition-all btn-press focus-ring"
     aria-label={label}
   >
     {icon}
@@ -35,7 +35,7 @@ const ReactionChip = ({ emoji, count, reacted, onClick, compact = false }: { emo
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
       className={`
         ${compact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2.5 py-0.5 text-[10px]'} 
-        rounded-full border flex items-center gap-1 transition-all cursor-pointer select-none group
+        rounded-full border flex items-center gap-1 transition-all cursor-pointer select-none group btn-press
         ${reacted 
           ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_10px_rgba(19,221,236,0.15)] hover:bg-primary/20 hover:border-primary/50' 
           : 'bg-white/5 border-white/5 text-white/40 hover:border-white/20 hover:bg-white/10 hover:text-white/70'
@@ -1021,7 +1021,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             <input 
                 type="text" 
                 placeholder={`INPUT // ${isDM ? '@' : '#'}${channel.name.toUpperCase()}`} 
-                className="flex-1 bg-transparent border-none focus:outline-none text-white px-3 font-mono text-xs placeholder-white/40"
+                className="flex-1 bg-transparent border-none focus:outline-none text-white px-3 font-mono text-xs placeholder-white/40 focus-ring rounded-r1"
                 aria-label="Message Input"
                 value={inputValue}
                 onChange={handleInputChange}
@@ -1038,7 +1038,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       />
                     )}
                 </div>
-                <button onClick={handleSendMessage} className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-bg-0 shadow-glow hover:scale-105 transition-all group-focus-within:shadow-[0_0_20px_#13DDEC]" aria-label="Send Message"><Send size={18} /></button>
+                <button onClick={handleSendMessage} className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-bg-0 shadow-glow hover:scale-105 transition-all btn-press group-focus-within:shadow-[0_0_20px_#13DDEC]" aria-label="Send Message"><Send size={18} /></button>
             </div>
         </div>
       </div>
@@ -1078,7 +1078,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       {hasJumpToPresent && isScrolledUp && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-32 left-1/2 -translate-x-1/2 z-20 glass-card bg-bg-0/80 border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-2xl hover:border-primary/30 transition-all animate-in fade-in slide-in-from-bottom-2"
+          className="absolute bottom-32 left-1/2 -translate-x-1/2 z-20 glass-card bg-bg-0/80 border border-white/10 rounded-full px-4 py-2 flex items-center gap-2 shadow-2xl hover:border-primary/30 transition-all animate-in fade-in slide-in-from-bottom-2 btn-press hover-lift"
         >
           <ArrowDown size={14} className="text-primary" />
           <span className="text-[10px] text-white/60 font-mono font-bold">JUMP TO PRESENT</span>

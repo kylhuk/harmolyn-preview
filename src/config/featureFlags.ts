@@ -16,16 +16,16 @@ export const FEATURES = {
   serverFolders: false,
 
   // ─── Auth ────────────────────────────────────────────────
-  loginScreen: false,
-  registerScreen: false,
-  qrLogin: false,
-  mfa: false,
-  accountSwitching: false,
+  loginScreen: true,
+  registerScreen: true,
+  qrLogin: true,
+  mfa: true,
+  accountSwitching: true,
 
   // ─── User ────────────────────────────────────────────────
   userStatus: true,
   profileCustomization: true,
-  serverProfile: false,
+  serverProfile: true,
   friendsList: true,
   userPopout: true,
 
@@ -93,7 +93,7 @@ export const FEATURES = {
 
   // ─── Direct Messages ─────────────────────────────────────
   directMessages: true,
-  messageRequests: false,
+  messageRequests: true,
 
   // ─── Moderation ──────────────────────────────────────────
   autoMod: false,

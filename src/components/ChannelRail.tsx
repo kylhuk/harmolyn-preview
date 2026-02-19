@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
 import { Server, User, UserStatus } from '@/types';
-import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, LogOut, Radio, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { USERS, DIRECT_MESSAGES } from '@/data';
+import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, LogOut, Radio, PanelLeftClose, PanelLeftOpen, ArrowUpDown } from 'lucide-react';
+import { USERS, DIRECT_MESSAGES, CURRENT_USER } from '@/data';
 import { StatusPicker } from '@/components/StatusPicker';
-
+import { AccountSwitcher } from '@/components/AccountSwitcher';
+import { useFeature } from '@/hooks/useFeature';
 interface ChannelRailProps {
   server?: Server;
   activeChannelId: string;
@@ -158,6 +159,8 @@ const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = 
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [userStatus, setUserStatus] = useState<UserStatus>(currentUser.status);
   const [customStatus, setCustomStatus] = useState('');
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
+  const hasAccountSwitching = useFeature('accountSwitching');
 
   const statusColors: Record<UserStatus, string> = {
     online: 'bg-accent-success shadow-[0_0_5px_#05FFA1]',
@@ -165,6 +168,11 @@ const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = 
     dnd: 'bg-accent-danger shadow-[0_0_5px_#FF2A6D]',
     offline: 'bg-white/20',
   };
+
+  const mockAccounts = [
+    { user: currentUser, active: true },
+    { user: { ...USERS[1], id: 'alt1' }, active: false },
+  ];
 
   return (
     <div className="p-3 bg-bg-0/50 border-t border-white/5 flex items-center gap-2.5 relative">
@@ -175,6 +183,15 @@ const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = 
           onStatusChange={setUserStatus}
           onCustomStatusChange={setCustomStatus}
           onClose={() => setShowStatusPicker(false)}
+        />
+      )}
+      {showAccountSwitcher && hasAccountSwitching && (
+        <AccountSwitcher
+          accounts={mockAccounts}
+          onSwitch={() => setShowAccountSwitcher(false)}
+          onAddAccount={() => setShowAccountSwitcher(false)}
+          onLogout={() => setShowAccountSwitcher(false)}
+          onClose={() => setShowAccountSwitcher(false)}
         />
       )}
       <button className="relative group cursor-pointer" onClick={() => setShowStatusPicker(!showStatusPicker)} aria-label="Set Status">
@@ -190,6 +207,9 @@ const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = 
         )}
       </div>
       <div className="flex gap-0.5">
+        {hasAccountSwitching && (
+          <button onClick={() => setShowAccountSwitcher(!showAccountSwitcher)} aria-label="Switch Account" className="p-1 text-white/40 hover:text-primary transition-colors"><ArrowUpDown size={14} /></button>
+        )}
         <button aria-label="Mute Microphone" className="p-1 text-white/40 hover:text-primary transition-colors"><Mic size={14} /></button>
         <button aria-label="Deafen Audio" className="p-1 text-white/40 hover:text-primary transition-colors"><Headphones size={14} /></button>
         <button onClick={onOpenSettings} aria-label="Open Settings" className="p-1 text-white/40 hover:text-primary transition-colors"><Settings size={14} /></button>

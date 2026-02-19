@@ -12,8 +12,10 @@ import { PollMessage } from '@/components/PollMessage';
 import { ThreadPanel } from '@/components/ThreadPanel';
 import { MediaLightbox } from '@/components/MediaLightbox';
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal';
+import { SearchPanel } from '@/components/SearchPanel';
+import { InboxPanel } from '@/components/InboxPanel';
 import { useFeature } from '@/hooks/useFeature';
-import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3, Link2, ArrowDown, MessageCircle } from 'lucide-react';
+import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3, Link2, ArrowDown, MessageCircle, Inbox } from 'lucide-react';
 
 // Action button sub-component for message interactions
 const ActionBtn = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) => (
@@ -187,11 +189,15 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const hasDeleteConfirm = useFeature('deleteConfirmation');
   const hasJumpToPresent = useFeature('jumpToPresent');
   const hasUnreadDivider = useFeature('unreadDivider');
+  const hasAdvancedSearch = useFeature('advancedSearch');
+  const hasInbox = useFeature('inbox');
 
   const [threadMessage, setThreadMessage] = useState<Message | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Message | null>(null);
   const [isScrolledUp, setIsScrolledUp] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
   const UNREAD_AFTER_INDEX = 8; // Mock: messages after index 8 are "unread"
 
   useEffect(() => {
@@ -479,6 +485,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
            </button>
 
           <div className="hidden md:flex items-center gap-4 text-white/40">
+             {hasInbox && (
+               <button aria-label="Inbox" onClick={() => setShowInbox(!showInbox)} className={`transition-colors relative ${showInbox ? 'text-primary' : 'hover:text-primary'}`}>
+                 <Inbox size={16} />
+                 <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-accent-danger text-[7px] font-bold flex items-center justify-center text-white shadow-[0_0_6px_rgba(255,42,109,0.35)]">2</span>
+               </button>
+             )}
              <button aria-label="Notifications" className="hover:text-primary transition-colors"><Bell size={16} /></button>
               <div className="relative">
                  <button aria-label="Pinned Messages" onClick={() => setShowPinned(!showPinned)} className={`transition-colors relative ${showPinned ? 'text-primary' : 'hover:text-primary'}`}>
@@ -1073,6 +1085,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           src={lightboxSrc}
           onClose={() => setLightboxSrc(null)}
         />
+      )}
+
+      {/* Search Panel */}
+      {showSearchPanel && hasAdvancedSearch && (
+        <SearchPanel onClose={() => setShowSearchPanel(false)} />
+      )}
+
+      {/* Inbox Panel */}
+      {showInbox && hasInbox && (
+        <InboxPanel onClose={() => setShowInbox(false)} />
       )}
     </div>
   );

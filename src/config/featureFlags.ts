@@ -43,11 +43,11 @@ export const FEATURES = {
   messageForwarding: true,
   polls: true,
   threads: true,
-  voiceMessages: false,
+  voiceMessages: true,
   slashCommands: true,
   messageLinks: true,
   superReactions: false,
-  slowmode: false,
+  slowmode: true,
   jumpToPresent: true,
   unreadDivider: true,
   imageLightbox: true,
@@ -67,12 +67,12 @@ export const FEATURES = {
   // ─── Channels ────────────────────────────────────────────
   textVoiceChannels: true,
   channelCategories: true,
-  forumChannels: false,
+  forumChannels: true,
   announcementChannels: false,
-  privateChannels: false,
+  privateChannels: true,
   channelFollowing: false,
   scheduledEvents: false,
-  channelCreationFlow: false,
+  channelCreationFlow: true,
   channelPinsView: false,
 
   // ─── Server ──────────────────────────────────────────────
@@ -82,7 +82,7 @@ export const FEATURES = {
   membersManagement: true,
   serverBoost: false,
   serverApplications: false,
-  joinViaInvite: false,
+  joinViaInvite: true,
   vanityUrls: false,
 
   // ─── Community ───────────────────────────────────────────
@@ -103,8 +103,8 @@ export const FEATURES = {
   duplicateChannel: false,
 
   // ─── Search & Navigation ─────────────────────────────────
-  advancedSearch: false,
-  inbox: false,
+  advancedSearch: true,
+  inbox: true,
   searchShortcuts: false,
 
   // ─── Settings ────────────────────────────────────────────

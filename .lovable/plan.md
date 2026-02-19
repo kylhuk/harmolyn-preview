@@ -1,52 +1,46 @@
 
 
-# Wire External Components into the Lovable Build
+# Recover Right Sidebar and Optimize Codebase
 
-## Overview
-The root-level component files (`components/`, `data.ts`, `types.ts`, `utils/`) exist but are outside the `src/` directory, so they are not part of the Vite build. We need to move them into `src/` and update `src/App.tsx` to render the `Layout` component.
+## Problem
+The app fails to build because 49 unused UI component files in `src/components/ui/` require ~15 missing npm packages. The right sidebar (MemberSidebar) code is intact but never renders because the build crashes.
 
-## Changes
+## Solution
 
-### 1. Move data and type files into `src/`
-- Create `src/data.ts` (copy from root `data.ts`)
-- Create `src/types.ts` (copy from root `types.ts`)
-- Create `src/utils/themeGenerator.ts` (copy from root `utils/themeGenerator.ts`)
+### 1. Delete all unused UI components and related files
+None of the files in `src/components/ui/` are imported by the app. Delete the entire folder and related unused files:
 
-### 2. Move all components into `src/components/`
-- `src/components/Layout.tsx`
-- `src/components/ServerRail.tsx`
-- `src/components/ChannelRail.tsx`
-- `src/components/ChatArea.tsx`
-- `src/components/MemberSidebar.tsx`
-- `src/components/SettingsScreen.tsx`
-- `src/components/ServerExplorer.tsx`
-- `src/components/CreateServerModal.tsx`
+- **Delete all files** in `src/components/ui/`
+- **Delete** `src/hooks/use-toast.ts`
+- **Delete** `src/hooks/use-mobile.tsx`
+- **Delete** `src/components/NavLink.tsx`
+- **Delete** `src/lib/utils.ts`
+- **Delete** `src/pages/Index.tsx` and `src/pages/NotFound.tsx`
 
-All import paths will be updated from `../types` / `../data` / `../utils/themeGenerator` to `@/types`, `@/data`, `@/utils/themeGenerator` (using the configured alias).
+This eliminates all missing dependency errors instantly.
 
-### 3. Update `src/App.tsx`
-Replace the current routing setup with a direct render of the `Layout` component (the app is a single-screen chat UI, not a multi-page app):
+### 2. Remove unused dependencies from package.json
+These installed packages are only used by the deleted UI components:
 
-```tsx
-import { Layout } from "@/components/Layout";
+- `@radix-ui/react-slot`
+- `@radix-ui/react-toast`
+- `@radix-ui/react-tooltip`
+- `class-variance-authority`
+- `clsx`
+- `tailwind-merge`
+- `sonner`
+- `tailwindcss-animate`
 
-const App = () => <Layout />;
-export default App;
-```
+### 3. Result
+Once the dead code is removed, the build succeeds and the MemberSidebar (right sidebar) renders as designed. No changes needed to the actual app components -- only removal of unused scaffolding.
 
-### 4. Add missing CSS utility
-The `glass-panel` class is used in several components but not defined in `src/index.css`. Add it alongside the existing `glass-card` class.
+## Technical Details
 
-Also add `no-scrollbar` utility and `pb-safe` for mobile bottom safe area.
+The member sidebar is fully implemented in `src/components/Layout.tsx`:
+- Renders when `showMemberSidebar` is true (non-DM, non-explore views)
+- Supports collapse/expand via hover zones and toggle button
+- Shows member groups (Operators, Idle, Offline) with status indicators
+- On mobile/tablet renders as overlay with backdrop
 
-### 5. Add `animate-in` utilities
-Components use Tailwind animate classes like `animate-in`, `fade-in`, `zoom-in-95`, `slide-in-from-bottom-10`, `slide-in-from-top-2`. These come from `tailwindcss-animate` which is already installed and configured.
-
-## File count
-- 8 new component files in `src/components/`
-- 2 new data/type files in `src/`
-- 1 new utility file in `src/utils/`
-- 1 edit to `src/App.tsx`
-- 1 edit to `src/index.css` (add missing utilities)
-- Total: 11 new files, 2 edits
+**File impact:** ~55 files deleted, 1 file edited (package.json to remove unused deps), 0 app component changes needed.
 

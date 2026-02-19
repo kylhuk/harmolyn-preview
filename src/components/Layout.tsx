@@ -10,6 +10,7 @@ import { ServerSettingsScreen } from '@/components/ServerSettingsScreen';
 import { CreateServerModal } from '@/components/CreateServerModal';
 import { FriendsPanel } from '@/components/FriendsPanel';
 import { QuickSwitcher } from '@/components/QuickSwitcher';
+import { KeyboardShortcutsOverlay } from '@/components/KeyboardShortcutsOverlay';
 import { useFeature } from '@/hooks/useFeature';
 import { SERVERS, USERS, MOCK_MESSAGES, CURRENT_USER, DIRECT_MESSAGES } from '@/data';
 import { Channel, AppState, MessageLayout } from '@/types';
@@ -70,18 +71,24 @@ export const Layout: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Ctrl+K Quick Switcher
+  // Ctrl+K Quick Switcher & Ctrl+/ Shortcuts
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const hasKeyboardShortcuts = useFeature('keyboardShortcuts');
+
   useEffect(() => {
-    if (!hasQuickSwitcher) return;
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k' && hasQuickSwitcher) {
         e.preventDefault();
         setShowQuickSwitcher(prev => !prev);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === '/' && hasKeyboardShortcuts) {
+        e.preventDefault();
+        setShowKeyboardShortcuts(prev => !prev);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [hasQuickSwitcher]);
+  }, [hasQuickSwitcher, hasKeyboardShortcuts]);
 
   const handleQuickNavigate = (serverId: string, channelId: string) => {
     setState(prev => ({
@@ -157,6 +164,9 @@ export const Layout: React.FC = () => {
       {state.showCreateServer && <CreateServerModal onClose={() => setState(s => ({...s, showCreateServer: false}))} />}
       {showQuickSwitcher && hasQuickSwitcher && (
         <QuickSwitcher onClose={() => setShowQuickSwitcher(false)} onNavigate={handleQuickNavigate} />
+      )}
+      {showKeyboardShortcuts && hasKeyboardShortcuts && (
+        <KeyboardShortcutsOverlay onClose={() => setShowKeyboardShortcuts(false)} />
       )}
 
       {/* Side Rail: Hidden on Mobile */}

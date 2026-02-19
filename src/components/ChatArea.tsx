@@ -14,6 +14,7 @@ import { MediaLightbox } from '@/components/MediaLightbox';
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal';
 import { SearchPanel } from '@/components/SearchPanel';
 import { InboxPanel } from '@/components/InboxPanel';
+import { MentionAutocomplete } from '@/components/MentionAutocomplete';
 import { useFeature } from '@/hooks/useFeature';
 import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3, Link2, ArrowDown, MessageCircle, Inbox } from 'lucide-react';
 
@@ -191,6 +192,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const hasUnreadDivider = useFeature('unreadDivider');
   const hasAdvancedSearch = useFeature('advancedSearch');
   const hasInbox = useFeature('inbox');
+  const hasMentionAutocomplete = useFeature('mentionAutocomplete');
 
   const [threadMessage, setThreadMessage] = useState<Message | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -198,7 +200,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [isScrolledUp, setIsScrolledUp] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
-  const UNREAD_AFTER_INDEX = 8; // Mock: messages after index 8 are "unread"
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const UNREAD_AFTER_INDEX = 8;
 
   useEffect(() => {
     setMessagesState(messages);
@@ -222,6 +225,15 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       setShowSlashCommands(true);
     } else {
       setShowSlashCommands(false);
+    }
+    // Mention autocomplete
+    if (hasMentionAutocomplete) {
+      const atMatch = val.match(/@(\w*)$/);
+      if (atMatch) {
+        setMentionQuery(atMatch[1]);
+      } else {
+        setMentionQuery(null);
+      }
     }
   };
 
@@ -982,8 +994,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
         )}
 
-        <div className={`glass-realistic ${replyingTo ? 'rounded-b-r2 rounded-t-none' : 'rounded-r2'} flex items-center p-1.5 focus-within:border-primary/50 transition-all shadow-2xl relative overflow-hidden group`}>
+        <div className={`glass-realistic ${replyingTo ? 'rounded-b-r2 rounded-t-none' : 'rounded-r2'} flex items-center p-1.5 focus-within:border-primary/50 transition-all shadow-2xl relative overflow-visible group`}>
             <div className="absolute inset-0 grid-overlay opacity-5 group-focus-within:opacity-10 pointer-events-none"></div>
+
+            {/* Mention Autocomplete */}
+            {mentionQuery !== null && hasMentionAutocomplete && (
+              <MentionAutocomplete
+                users={users}
+                query={mentionQuery}
+                onSelect={(user) => {
+                  setInputValue(prev => prev.replace(/@\w*$/, `@${user.username} `));
+                  setMentionQuery(null);
+                }}
+                onClose={() => setMentionQuery(null)}
+              />
+            )}
             
             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
             <button onClick={() => fileInputRef.current?.click()} className="p-3 text-white/30 hover:text-primary transition-colors" aria-label="Add attachment"><PlusCircle size={20} /></button>

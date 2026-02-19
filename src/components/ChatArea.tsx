@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Channel, Message, User, MessageLayout } from '@/types';
 import { generateTheme } from '@/utils/themeGenerator';
-import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText } from 'lucide-react';
+import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight } from 'lucide-react';
 
 // Action button sub-component for message interactions
 const ActionBtn = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) => (
@@ -157,6 +157,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [showSlashCommands, setShowSlashCommands] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showThemeSettings, setShowThemeSettings] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
 
   const [messagesState, setMessagesState] = useState<Message[]>(messages);
   const [mutedUsers, setMutedUsers] = useState<Set<string>>(new Set());
@@ -195,33 +196,23 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
     
+    const baseMsg: Partial<Message> = {
+      id: `m${Date.now()}`,
+      userId: 'me',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      ...(replyingTo ? { replyToId: replyingTo.id } : {}),
+    };
+
     if (inputValue.startsWith('/me ')) {
         const action = inputValue.substring(4);
-        const newMessage: Message = {
-            id: `m${Date.now()}`,
-            userId: 'me',
-            content: `_${action}_`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessagesState(prev => [...prev, newMessage]);
+        setMessagesState(prev => [...prev, { ...baseMsg, content: `_${action}_` } as Message]);
     } else if (inputValue.startsWith('/shrug')) {
-         const newMessage: Message = {
-            id: `m${Date.now()}`,
-            userId: 'me',
-            content: `${inputValue.substring(6)} ¯\\_(ツ)_/¯`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessagesState(prev => [...prev, newMessage]);
+        setMessagesState(prev => [...prev, { ...baseMsg, content: `${inputValue.substring(6)} ¯\\_(ツ)_/¯` } as Message]);
     } else {
-        const newMessage: Message = {
-            id: `m${Date.now()}`,
-            userId: 'me',
-            content: inputValue,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessagesState(prev => [...prev, newMessage]);
+        setMessagesState(prev => [...prev, { ...baseMsg, content: inputValue } as Message]);
     }
     setInputValue('');
+    setReplyingTo(null);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -466,6 +457,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           const isSpecial = user.role === 'Admin' || user.role === 'Moderator';
           const isMe = msg.userId === 'me';
           const displayContent = highlightText(msg.content, searchQuery);
+          const replyMsg = msg.replyToId ? messagesState.find(m => m.id === msg.replyToId) : null;
+          const replyUser = replyMsg ? getUser(replyMsg.userId) : null;
 
           // --- TERMINAL VIEW ---
           if (messageLayout === 'terminal') {
@@ -496,7 +489,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         </UserPopup>
                       )}
                       
-                      <div className={`max-w-[85%] md:max-w-[65%] relative flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                       <div className={`max-w-[85%] md:max-w-[65%] relative flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                          {replyMsg && replyUser && (
+                            <div className={`flex items-center gap-2 mb-1 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] ${isMe ? 'self-end' : 'self-start'}`}>
+                              <CornerUpRight size={10} className="text-primary/50" />
+                              <span className="font-bold text-white/50">{replyUser.username}</span>
+                              <span className="text-white/30 truncate max-w-[200px]">{replyMsg.content}</span>
+                            </div>
+                          )}
                           {!isMe && <div className="ml-1 mb-1 text-[10px] font-bold text-white/40 tracking-wider uppercase">{user.username}</div>}
                           
                           <div className={`px-5 py-3 text-[15px] leading-relaxed relative shadow-lg group-hover:brightness-110 transition-all
@@ -524,7 +524,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                        {hoveredMessageId === msg.id && (
                            <div className={`absolute top-0 ${isMe ? 'left-auto right-[calc(100%+8px)]' : 'left-[calc(100%+8px)]'} glass-panel border border-white/10 rounded-full px-1.5 py-1 flex items-center gap-1 shadow-xl animate-in fade-in zoom-in-95 z-10`}>
                                <ActionBtn icon={<Smile size={16} />} label="Add Reaction" onClick={() => setReactionMenuMsgId(msg.id)} />
-                               <ActionBtn icon={<MessageSquare size={16} />} label="Reply" />
+                                <ActionBtn icon={<MessageSquare size={16} />} label="Reply" onClick={() => setReplyingTo(msg)} />
                                <ActionBtn icon={<Trash2 size={16} />} label="Delete Message" onClick={() => deleteMessage(msg.id)} />
                                <ActionBtn 
                                  icon={<MicOff size={16} className={mutedUsers.has(msg.userId) ? "text-accent-danger" : ""} />} 
@@ -572,6 +572,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               </UserPopup>
               
               <div className="flex-1 min-w-0">
+                {replyMsg && replyUser && (
+                  <div className="flex items-center gap-2 mb-2 pl-1">
+                    <div className="w-[2px] h-4 bg-primary/30 rounded-full"></div>
+                    <img src={replyUser.avatar} className="w-4 h-4 rounded-full" alt="" />
+                    <span className="text-[11px] font-bold text-white/50">{replyUser.username}</span>
+                    <span className="text-[11px] text-white/30 truncate max-w-[300px]">{replyMsg.content}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-3 mb-2 flex-wrap min-h-[24px]">
                   <UsernameDisplay user={user} />
                   {user.role === 'Bot' && (
@@ -597,7 +605,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               {hoveredMessageId === msg.id && (
                   <div className="absolute -top-5 right-8 glass-panel border border-white/10 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl animate-in fade-in zoom-in-95 z-10">
                       <ActionBtn icon={<Smile size={16} />} label="Add Reaction" onClick={() => setReactionMenuMsgId(msg.id)} />
-                      <ActionBtn icon={<MessageSquare size={16} />} label="Reply" />
+                      <ActionBtn icon={<MessageSquare size={16} />} label="Reply" onClick={() => setReplyingTo(msg)} />
                       <ActionBtn icon={<Pin size={16} />} label="Pin Message" />
                       <ActionBtn icon={<Trash2 size={16} />} label="Delete Message" onClick={() => deleteMessage(msg.id)} />
                       <ActionBtn 
@@ -635,7 +643,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             style={{ top: contextMenu.y, left: contextMenu.x }}
         >
             <div className="p-1 space-y-0.5">
-                <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-r1 text-white text-sm flex items-center gap-2 transition-colors">
+                <button 
+                    onClick={() => {
+                        const msg = messagesState.find(m => m.id === contextMenu.msgId);
+                        if (msg) { setReplyingTo(msg); setContextMenu(null); }
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-r1 text-white text-sm flex items-center gap-2 transition-colors"
+                >
                     <MessageSquare size={14} className="text-white/40" /> Reply
                 </button>
                 <button className="w-full text-left px-3 py-2 hover:bg-white/10 rounded-r1 text-white text-sm flex items-center gap-2 transition-colors">
@@ -680,7 +694,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
         )}
 
-        <div className="glass-realistic rounded-r2 flex items-center p-2 focus-within:border-primary/50 transition-all shadow-2xl relative overflow-hidden group">
+        {/* Reply Preview Bar */}
+        {replyingTo && (
+          <div className="glass-card rounded-t-r2 border border-white/10 border-b-0 px-4 py-3 flex items-center gap-3 animate-in slide-in-from-bottom-2">
+            <div className="w-[3px] h-8 bg-primary rounded-full flex-shrink-0"></div>
+            <div className="flex-1 min-w-0">
+              <div className="micro-label text-primary mb-0.5">REPLYING TO // {getUser(replyingTo.userId).username.toUpperCase()}</div>
+              <div className="text-xs text-white/50 truncate">{replyingTo.content}</div>
+            </div>
+            <button onClick={() => setReplyingTo(null)} className="p-1.5 text-white/30 hover:text-white hover:bg-white/10 rounded-full transition-colors" aria-label="Cancel reply">
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        <div className={`glass-realistic ${replyingTo ? 'rounded-b-r2 rounded-t-none' : 'rounded-r2'} flex items-center p-2 focus-within:border-primary/50 transition-all shadow-2xl relative overflow-hidden group`}>
             <div className="absolute inset-0 grid-overlay opacity-5 group-focus-within:opacity-10 pointer-events-none"></div>
             
             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />

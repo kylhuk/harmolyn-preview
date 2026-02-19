@@ -100,7 +100,8 @@ export const MOCK_MESSAGES: Message[] = [
     id: 'm5', 
     userId: 'me', 
     content: 'Thanks Glitch. Let me know if you need authorization for the restart.', 
-    timestamp: '09:28 AM' 
+    timestamp: '09:28 AM',
+    replyToId: 'm3'
   },
   { 
     id: 'm6', 

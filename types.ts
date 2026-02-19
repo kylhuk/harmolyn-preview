@@ -23,6 +23,7 @@ export interface Message {
   reactions?: { emoji: string; count: number; reacted: boolean }[];
   isSystem?: boolean;
   pinned?: boolean;
+  replyToId?: string;
 }
 
 export interface Channel {

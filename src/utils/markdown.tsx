@@ -33,7 +33,7 @@ export function renderMarkdown(text: string): React.ReactNode {
 }
 
 // Spoiler component: click to reveal
-const Spoiler = ({ children }: { children: React.ReactNode }) => {
+const Spoiler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [revealed, setRevealed] = React.useState(false);
   return (
     <span

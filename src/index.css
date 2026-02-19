@@ -143,3 +143,21 @@ body {
   font-weight: 700;
   letter-spacing: -0.01em;
 }
+
+.glass-panel {
+  background: rgba(16, 25, 27, 0.65);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}

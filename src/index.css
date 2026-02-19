@@ -168,3 +168,55 @@ body {
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ═══════════════════════════════════════════════
+   Performance Mode — .perf-mode on <html>
+   Disables all expensive GPU-composite effects.
+   ═══════════════════════════════════════════════ */
+
+.perf-mode .glass-card,
+.perf-mode .glass-realistic,
+.perf-mode .glass-panel {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Increase opacity to compensate for no blur */
+.perf-mode .glass-card { background: rgba(17, 23, 24, 0.92); }
+.perf-mode .glass-realistic { background: rgba(16, 25, 27, 0.88); box-shadow: none; }
+.perf-mode .glass-panel { background: rgba(16, 25, 27, 0.90); }
+
+/* Kill glows and complex shadows */
+.perf-mode .shadow-glow,
+.perf-mode .shadow-glow-sm,
+.perf-mode .text-glow {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* Kill grid overlay background pattern */
+.perf-mode .grid-overlay {
+  background-image: none !important;
+}
+
+/* Kill hover-lift transforms */
+.perf-mode .hover-lift:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Reduce all transitions & animations */
+.perf-mode *,
+.perf-mode *::before,
+.perf-mode *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.05s !important;
+}
+
+/* Respect prefers-reduced-motion natively too */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.1s !important;
+  }
+}

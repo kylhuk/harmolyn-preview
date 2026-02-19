@@ -12,6 +12,7 @@ import { Channel, AppState, MessageLayout } from '../types';
 import { Home, Compass, MessageSquare, Users as UsersIcon, Settings as SettingsIcon, Menu } from 'lucide-react';
 
 import { generateTheme } from '../utils/themeGenerator';
+import { usePerformanceMode } from '@/hooks/usePerformanceMode';
 
 export const Layout: React.FC = () => {
   const [state, setState] = useState<AppState>({
@@ -26,6 +27,9 @@ export const Layout: React.FC = () => {
     showCreateServer: false,
     showSettings: false
   });
+
+  // Performance mode — auto-detects low-end devices, adds .perf-mode to <html>
+  usePerformanceMode();
 
   // Theme State
   const [bgSeed, setBgSeed] = useState<string>('nexus-default');

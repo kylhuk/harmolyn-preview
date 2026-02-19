@@ -11,6 +11,10 @@ import { CreateServerModal } from '@/components/CreateServerModal';
 import { FriendsPanel } from '@/components/FriendsPanel';
 import { QuickSwitcher } from '@/components/QuickSwitcher';
 import { KeyboardShortcutsOverlay } from '@/components/KeyboardShortcutsOverlay';
+import { NitroScreen, ShopScreen, QuestsScreen } from '@/components/monetization';
+import { ServerBoost } from '@/components/ServerBoost';
+import { ServerApplications } from '@/components/ServerApplications';
+import { ActivityLauncher } from '@/components/voice/ActivityLauncher';
 import { useFeature } from '@/hooks/useFeature';
 import { SERVERS, USERS, MOCK_MESSAGES, CURRENT_USER, DIRECT_MESSAGES } from '@/data';
 import { Channel, AppState, MessageLayout } from '@/types';
@@ -29,7 +33,13 @@ export const Layout: React.FC = () => {
     memberListCollapsed: false,
     channelListCollapsed: false,
     showCreateServer: false,
-    showSettings: false
+    showSettings: false,
+    showNitro: false,
+    showShop: false,
+    showQuests: false,
+    showBoost: false,
+    showApplications: false,
+    showActivities: false,
   });
 
   const [showFriends, setShowFriends] = useState(true);
@@ -157,11 +167,25 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
-      {state.showSettings && <SettingsScreen user={CURRENT_USER} onClose={() => setState(s => ({...s, showSettings: false}))} />}
+      {state.showSettings && (
+        <SettingsScreen
+          user={CURRENT_USER}
+          onClose={() => setState(s => ({...s, showSettings: false}))}
+          onOpenNitro={() => setState(s => ({...s, showSettings: false, showNitro: true}))}
+          onOpenShop={() => setState(s => ({...s, showSettings: false, showShop: true}))}
+          onOpenQuests={() => setState(s => ({...s, showSettings: false, showQuests: true}))}
+        />
+      )}
       {state.viewMode === 'server-settings' && activeServer && (
         <ServerSettingsScreen server={activeServer} onClose={() => setState(s => ({...s, viewMode: 'chat'}))} />
       )}
       {state.showCreateServer && <CreateServerModal onClose={() => setState(s => ({...s, showCreateServer: false}))} />}
+      {state.showNitro && <NitroScreen onClose={() => setState(s => ({...s, showNitro: false}))} />}
+      {state.showShop && <ShopScreen onClose={() => setState(s => ({...s, showShop: false}))} />}
+      {state.showQuests && <QuestsScreen onClose={() => setState(s => ({...s, showQuests: false}))} />}
+      {state.showBoost && activeServer && <ServerBoost serverName={activeServer.name} currentBoosts={3} onClose={() => setState(s => ({...s, showBoost: false}))} />}
+      {state.showApplications && <ServerApplications onClose={() => setState(s => ({...s, showApplications: false}))} />}
+      {state.showActivities && <ActivityLauncher onClose={() => setState(s => ({...s, showActivities: false}))} />}
       {showQuickSwitcher && hasQuickSwitcher && (
         <QuickSwitcher onClose={() => setShowQuickSwitcher(false)} onNavigate={handleQuickNavigate} />
       )}

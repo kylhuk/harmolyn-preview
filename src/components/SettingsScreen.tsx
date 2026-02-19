@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Shield, Key, Bell, Monitor, LogOut, ChevronRight, Smartphone, Lock, Fingerprint, QrCode, Eye, Command, Accessibility } from 'lucide-react';
+import { X, User, Shield, Key, Bell, Monitor, LogOut, ChevronRight, Smartphone, Lock, Fingerprint, QrCode, Eye, Command, Accessibility, Crown, ShoppingBag, Trophy } from 'lucide-react';
 import { User as UserType } from '@/types';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { useFeature } from '@/hooks/useFeature';
@@ -7,10 +7,16 @@ import { useFeature } from '@/hooks/useFeature';
 interface SettingsScreenProps {
   user: UserType;
   onClose: () => void;
+  onOpenNitro?: () => void;
+  onOpenShop?: () => void;
+  onOpenQuests?: () => void;
 }
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose, onOpenNitro, onOpenShop, onOpenQuests }) => {
   const [activeSection, setActiveSection] = useState('account');
+  const hasNitro = useFeature('nitro');
+  const hasShop = useFeature('shop');
+  const hasQuests = useFeature('quests');
 
   return (
     <div className="absolute inset-0 z-[100] bg-bg-0 flex flex-col md:flex-row text-white/70 animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
@@ -29,13 +35,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose })
              <SettingsItem icon={<Bell size={16} />} label="Signal Alerts" active={activeSection === 'notifications'} onClick={() => setActiveSection('notifications')} />
              <SettingsItem icon={<Accessibility size={16} />} label="Accessibility" active={activeSection === 'accessibility'} onClick={() => setActiveSection('accessibility')} />
              <SettingsItem icon={<Smartphone size={16} />} label="Mobile Sync" active={activeSection === 'mobile'} onClick={() => setActiveSection('mobile')} />
-             
-             <div className="h-6"></div>
-             <div className="border-t border-white/5 my-3 mx-3"></div>
-             <button className="flex items-center gap-2.5 px-3 py-2 rounded-r1 w-full text-accent-danger hover:bg-accent-danger/10 transition-all micro-label">
-                <LogOut size={16} />
-                <span>Log Out</span>
-             </button>
+              
+              <div className="h-6"></div>
+              <div className="micro-label text-white/20 px-3 mb-3">Premium</div>
+              {hasNitro && <SettingsItem icon={<Crown size={16} />} label="Harmolyn Nitro" active={false} onClick={onOpenNitro} />}
+              {hasShop && <SettingsItem icon={<ShoppingBag size={16} />} label="Shop" active={false} onClick={onOpenShop} />}
+              {hasQuests && <SettingsItem icon={<Trophy size={16} />} label="Quests" active={false} onClick={onOpenQuests} />}
+
+              <div className="h-6"></div>
+              <div className="border-t border-white/5 my-3 mx-3"></div>
+              <button className="flex items-center gap-2.5 px-3 py-2 rounded-r1 w-full text-accent-danger hover:bg-accent-danger/10 transition-all micro-label">
+                 <LogOut size={16} />
+                 <span>Log Out</span>
+              </button>
          </div>
       </div>
 

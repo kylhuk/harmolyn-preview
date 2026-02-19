@@ -107,8 +107,7 @@ export const Layout: React.FC = () => {
   const isChannelExpanded = !state.channelListCollapsed || channelListHovered;
   const isChannelOverlay = !isMobile && state.channelListCollapsed && channelListHovered;
   
-  const isMemberExpanded = !state.memberListCollapsed || memberListHovered;
-  const isMemberOverlay = !isMobile && state.memberListCollapsed && memberListHovered;
+  // memberListHovered is used only on desktop for hover-to-peek
 
   return (
     <div className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
@@ -180,8 +179,10 @@ export const Layout: React.FC = () => {
 
                         {showMemberSidebar && (
                            <>
-                             <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isMobile ? 'w-[280px]' : 'w-[12px]'}`}></div>
+                             {/* Spacer: full width when expanded on desktop, thin strip when collapsed */}
+                             <div className={`transition-all duration-300 ease-in-out flex-shrink-0 ${!state.memberListCollapsed && !isOverlaySidebar ? 'w-[280px]' : 'w-0'}`}></div>
 
+                             {/* Overlay backdrop for tablet/mobile */}
                              {isOverlaySidebar && !state.memberListCollapsed && (
                                <div 
                                  className="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 animate-in fade-in"
@@ -189,24 +190,29 @@ export const Layout: React.FC = () => {
                                ></div>
                              )}
 
-                             {!isMobile && state.memberListCollapsed && (
-                                 <div 
-                                    className="absolute right-0 top-0 bottom-0 w-4 z-40"
-                                    onMouseEnter={() => setMemberListHovered(true)}
-                                 ></div>
-                             )}
-
+                             {/* Single unified hover zone + sidebar container (desktop only) */}
                              <div 
-                                className="absolute right-0 top-0 bottom-0 z-40 h-full w-[280px]"
+                                className={`absolute right-0 top-0 bottom-0 z-40 h-full transition-all duration-200 ${
+                                  state.memberListCollapsed && !memberListHovered ? 'w-3 cursor-pointer' : 'w-[280px]'
+                                }`}
+                                onMouseEnter={() => { if (!isOverlaySidebar && state.memberListCollapsed) setMemberListHovered(true); }}
                                 onMouseLeave={() => setMemberListHovered(false)}
-                            >
+                                onClick={() => { if (state.memberListCollapsed && !memberListHovered) setState(s => ({...s, memberListCollapsed: false})); }}
+                             >
+                                {/* Collapsed indicator strip */}
+                                {state.memberListCollapsed && !memberListHovered && (
+                                  <div className="w-full h-full flex items-center justify-center bg-bg-1 border-l border-white/5">
+                                    <div className="w-1 h-8 bg-white/10 rounded-full"></div>
+                                  </div>
+                                )}
+
                                 <MemberSidebar 
                                     members={activeServer.members} 
                                     collapsed={state.memberListCollapsed && !memberListHovered}
-                                    onToggleCollapse={() => setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed}))}
-                                    isOverlay={isOverlaySidebar || isMemberOverlay}
+                                    onToggleCollapse={() => { setMemberListHovered(false); setState(s => ({...s, memberListCollapsed: !s.memberListCollapsed})); }}
+                                    isOverlay={isOverlaySidebar}
                                 />
-                            </div>
+                             </div>
                            </>
                         )}
                     </>

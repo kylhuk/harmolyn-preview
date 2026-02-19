@@ -48,12 +48,18 @@
 
 :root {
   --primary-glow: 0 0 10px rgba(19, 221, 236, 0.5), 0 0 20px rgba(19, 221, 236, 0.3);
+  --shadow-glow-sm: 0 0 5px rgba(19, 221, 236, 0.40);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.37);
 }
 
 body {
   background-color: #050A0B;
   color: #F6F8F8;
-  font-family: 'Lato', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.shadow-glow-sm {
+  box-shadow: var(--shadow-glow-sm);
 }
 
 .glass-card {

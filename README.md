@@ -1,109 +1,123 @@
-<!-- Replace kylhuk/YOUR_REPO and links. Keep badges that you actually support. -->
+<div align="center">
+  <h1>Harmolyn</h1>
+  <p><b>Advanced chat client</b> for the <b>xorein</b> network — Discord-like UX with explicit, verifiable security modes.</p>
 
-<p align="center">
-  <img src="assets/harmolyn-banner.png" alt="Harmolyn" width="900" />
-</p>
+  <p>
+    <img alt="status" src="https://img.shields.io/badge/status-active-blue" />
+    <img alt="protocol" src="https://img.shields.io/badge/protocol-xorein-black" />
+    <img alt="security" src="https://img.shields.io/badge/security-explicit%20modes%20%2B%20E2EE-success" />
+    <img alt="local-api" src="https://img.shields.io/badge/local%20API-local--only%20transport-important" />
+  </p>
 
-<h1 align="center">Harmolyn</h1>
+  <p>
+    <a href="https://github.com/kylhuk/harmolyn/releases"><img alt="release" src="https://img.shields.io/github/v/release/kylhuk/harmolyn?display_name=tag&sort=semver" /></a>
+    <a href="https://github.com/kylhuk/harmolyn/releases"><img alt="downloads" src="https://img.shields.io/github/downloads/kylhuk/harmolyn/total" /></a>
+    <a href="https://github.com/kylhuk/harmolyn/actions"><img alt="build" src="https://img.shields.io/github/actions/workflow/status/kylhuk/harmolyn/ci.yml" /></a>
+    <a href="https://github.com/kylhuk/harmolyn/security"><img alt="security-policy" src="https://img.shields.io/badge/security-policy-blue" /></a>
+    <a href="https://opensource.org/licenses/AGPL-3.0"><img alt="license" src="https://img.shields.io/github/license/kylhuk/harmolyn" /></a>
+  </p>
 
-<p align="center">
-  Private-by-default messaging and communities, powered by the Xorein protocol.
-</p>
-
-<p align="center">
-  <a href="https://github.com/kylhuk/harmolyn/releases"><img alt="Release" src="https://img.shields.io/github/v/release/kylhuk/harmolyn?display_name=tag&sort=semver"></a>
-  <a href="https://github.com/kylhuk/harmolyn/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/kylhuk/harmolyn/total"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/kylhuk/harmolyn"></a>
-  <a href="https://github.com/kylhuk/harmolyn/actions"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/kylhuk/harmolyn/ci.yml"></a>
-  <a href="https://github.com/kylhuk/harmolyn/security/policy"><img alt="Security Policy" src="https://img.shields.io/badge/security-policy-blue"></a>
-  <a href="https://securityscorecards.dev/viewer/?uri=github.com/kylhuk/harmolyn"><img alt="OpenSSF Scorecard" src="https://img.shields.io/ossf-scorecard/github.com/kylhuk/harmolyn?label=OpenSSF%20Scorecard"></a>
-</p>
-
-<p align="center">
-  <img alt="E2EE" src="https://img.shields.io/badge/E2EE-visible%20in%20UI-success">
-  <img alt="Protocol" src="https://img.shields.io/badge/protocol-Xorein-informational">
-  <img alt="Advanced Users" src="https://img.shields.io/badge/audience-advanced%20end%20users-9cf">
-</p>
+  <p>
+    <a href="https://github.com/kylhuk/harmolyn/blob/main/README.md#security-model">Security</a> ·
+    <a href="https://github.com/kylhuk/harmolyn/blob/main/README.md#what-e2ee-can-and-cannot-do">Limits</a> ·
+    <a href="https://github.com/kylhuk/harmolyn/blob/main/README.md#verification">Verification</a> ·
+    <a href="https://github.com/kylhuk/xorein">xorein protocol</a>
+  </p>
+</div>
 
 ---
 
 ## What Harmolyn is
 
-Harmolyn is a chat client for people who want modern communities (servers, channels, roles, media) without giving up end-to-end encryption and explicit security guarantees.
+Harmolyn is the **end-user client** for the **xorein** network stack.
 
-Harmolyn is built on **Xorein**, a peer-to-peer protocol designed for secure messaging, group communication, and optional user-run infrastructure.
+- The UI is Harmolyn.
+- The local network engine is xorein (runs on your machine and speaks the P2P protocols).
+- Harmolyn connects to xorein using a **local-only transport** (Unix domain socket / Windows named pipe). No remote bind.
 
-## What you get
+If you care about *how* it works, Harmolyn is for you: the UI surfaces real security state (mode, coverage, retention) instead of hiding it behind marketing words.
 
-- **End-to-end encryption (E2EE)** where supported, with security shown **per chat/channel**
-- **Verification** (QR / safety number / fingerprints) to prevent impersonation
-- **Servers & channels** with community-grade features (roles, emojis, channels, media)
-- **Optional nodes** to improve availability and routing (without changing who can read content)
-- **Local-first UX**: your device is the source of truth for your keys
+---
 
-## What’s intentionally different
+## Key features (end-user, power-user friendly)
 
-Harmolyn trades a few “normal app conveniences” for stronger security:
+- **Explicit security modes per conversation surface** (no silent E2EE “toggle”)
+- **E2EE by default where it makes sense**, and **Clear** mode must be labeled
+- **Coverage labels** for search and history (Full / Partial / Empty)
+- **Retention-aware history** (no pretending history is “infinite”)
+- **Runs on a P2P network**; relays help reliability but are not trusted for plaintext
+- **Signed + reproducible release artifacts** (verify what you run)
 
-- **Search is local-first** (no server-side indexing of private content)
-- **History portability is explicit** (new devices don’t automatically have old content unless you enable encrypted sync/export)
-- **No silent downgrade**: if a medium isn’t E2EE, the UI shows it
+---
 
-## Install
+## Security model
 
-Download the latest release from:
-- **Releases:** https://github.com/kylhuk/harmolyn/releases
+Every conversation shows a badge in the header:
 
-Recommended: verify the download (signatures/checksums) if you care about supply-chain integrity.
+- **Seal** — 1:1 E2EE (X3DH + Double Ratchet)
+- **Tree** — small-group E2EE (MLS)
+- **Crowd / Channel** — large-scale E2EE using epoch rotation (revocation happens on rotation)
+- **Clear** — readable by infrastructure (explicitly labeled; not default for private spaces)
 
-## First-run checklist (do this)
+Tap the badge to see:
+- the mode name,
+- algorithm family,
+- whether history is locked across epochs,
+- search coverage label,
+- connection type (direct vs relay).
 
-1. **Create identity** (keys are generated locally)
-2. **Back up your recovery key** (no recovery = no restore)
-3. **Verify contacts** you care about (QR / safety number)
-4. Check your **Security Indicator** in each chat/channel
+---
 
-## Security indicator (how to read it)
+## What E2EE can and cannot do
 
-In every conversation, Harmolyn shows a one-tap security summary. Typical fields:
+E2EE protects **content** (message bodies, attachments; media where supported). It does not magically remove:
+- metadata (who/when/where routing),
+- endpoint compromise risk,
+- usability trade-offs (e.g., server-side full-text search is not available in strict E2EE chats).
 
-- **Encryption:** E2EE on/off (and the negotiated suite)
-- **Forward secrecy:** on/off
-- **Verification:** verified/unverified
-- **Transport:** direct / relayed / offline-queued (transport does not imply readability)
-- **Notes:** what metadata may still leak (IP/timing/membership)
+Harmolyn shows this honestly in the UI via labels instead of burying it in docs.
 
-If something is not end-to-end encrypted, Harmolyn should show that clearly.
+---
 
-## Limits and expectations
+## Quick start
 
-E2EE protects message content. It does not magically remove all metadata.
+1) Install from Releases  
+- Download Harmolyn (and the bundled xorein runtime if your build ships them together).
 
-Depending on how you use Harmolyn, some or all of these can still be visible to network participants:
-- your IP address (unless you use a privacy network)
-- timing/volume of messages
-- which servers/channels you join (depending on your design)
-- who is online
+2) First launch  
+- Create your identity.
+- Make an encrypted backup (recommended immediately).
 
-Also note:
-- **Push notifications** may leak metadata to OS vendors unless you use a “sealed notification” design or disable them.
-- **Link previews** may contact third-party servers unless disabled.
+3) Connect  
+- Add a friend via key / QR / deep link, or join a space via invite.
 
-## Running your own node (optional)
+---
 
-If you run a node, you typically get:
-- better availability for communities you care about
-- improved routing/relaying
-- optional encrypted storage replication (depending on Xorein configuration)
+## Verification
 
-See: **Xorein node docs** in the Xorein repository.
+Harmolyn releases ship with:
+- checksums,
+- signatures,
+- reproducible-build evidence (release manifest).
 
-## Support and security issues
+Verify before running if you’re strict about supply chain.
 
-- User help: `docs/` (or your website)
-- Vulnerabilities: see `SECURITY.md`
-- If you are handling serious security reports, publish a signed security policy and an embargo process.
+---
+
+## FAQ (short)
+
+**Can the network read my DMs?**  
+No in Seal mode (E2EE). The network can still see unavoidable routing metadata.
+
+**Why does search say “Partial”?**  
+Because E2EE prevents plaintext server-side indexing. “Partial” means your device searched only the history it currently has access to.
+
+**Can I run my own relay?**  
+Yes — xorein can run in relay/bootstrap modes. Harmolyn stays a client.
+
+---
 
 ## License
 
-See `LICENSE`.
+- Runtime/client code: **AGPL-3.0** (see LICENSE)
+- Protocol/spec text: **CC-BY-SA 4.0** (see spec files)

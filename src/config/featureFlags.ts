@@ -80,7 +80,7 @@ export const FEATURES = {
   serverDiscovery: true,
   rolesManagement: true,
   membersManagement: true,
-  serverBoost: true,
+  serverBoost: false,
   serverApplications: true,
   joinViaInvite: true,
   vanityUrls: true,
@@ -119,7 +119,7 @@ export const FEATURES = {
   roleMentionSuppression: true,
 
   // ─── Monetization ────────────────────────────────────────
-  nitro: true,
+  donations: true,
   shop: true,
   quests: true,
   serverTags: true,

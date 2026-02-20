@@ -13,8 +13,7 @@ import { CreateServerModal } from '@/components/CreateServerModal';
 import { FriendsPanel } from '@/components/FriendsPanel';
 import { QuickSwitcher } from '@/components/QuickSwitcher';
 import { KeyboardShortcutsOverlay } from '@/components/KeyboardShortcutsOverlay';
-import { NitroScreen, ShopScreen, QuestsScreen } from '@/components/monetization';
-import { ServerBoost } from '@/components/ServerBoost';
+import { DonationScreen, ShopScreen, QuestsScreen } from '@/components/monetization';
 import { ServerApplications } from '@/components/ServerApplications';
 import { ActivityLauncher } from '@/components/voice/ActivityLauncher';
 import { useFeature } from '@/hooks/useFeature';
@@ -36,10 +35,9 @@ export const Layout: React.FC = () => {
     channelListCollapsed: false,
     showCreateServer: false,
     showSettings: false,
-    showNitro: false,
+    showDonations: false,
     showShop: false,
     showQuests: false,
-    showBoost: false,
     showApplications: false,
     showActivities: false,
   });
@@ -220,7 +218,7 @@ export const Layout: React.FC = () => {
             <SettingsScreen
               user={CURRENT_USER}
               onClose={() => setState(s => ({...s, showSettings: false}))}
-              onOpenNitro={() => setState(s => ({...s, showSettings: false, showNitro: true}))}
+              onOpenDonations={() => setState(s => ({...s, showSettings: false, showDonations: true}))}
               onOpenShop={() => setState(s => ({...s, showSettings: false, showShop: true}))}
               onOpenQuests={() => setState(s => ({...s, showSettings: false, showQuests: true}))}
             />
@@ -235,10 +233,9 @@ export const Layout: React.FC = () => {
 
       <AnimatePresence>
         {state.showCreateServer && <CreateServerModal key="create" onClose={() => setState(s => ({...s, showCreateServer: false}))} />}
-        {state.showNitro && <NitroScreen key="nitro" onClose={() => setState(s => ({...s, showNitro: false}))} />}
+        {state.showDonations && <DonationScreen key="donations" onClose={() => setState(s => ({...s, showDonations: false}))} />}
         {state.showShop && <ShopScreen key="shop" onClose={() => setState(s => ({...s, showShop: false}))} />}
         {state.showQuests && <QuestsScreen key="quests" onClose={() => setState(s => ({...s, showQuests: false}))} />}
-        {state.showBoost && activeServer && <ServerBoost key="boost" serverName={activeServer.name} currentBoosts={3} onClose={() => setState(s => ({...s, showBoost: false}))} />}
         {state.showApplications && <ServerApplications key="apps" onClose={() => setState(s => ({...s, showApplications: false}))} />}
         {state.showActivities && <ActivityLauncher key="activities" onClose={() => setState(s => ({...s, showActivities: false}))} />}
         {showQuickSwitcher && hasQuickSwitcher && (
@@ -295,7 +292,7 @@ export const Layout: React.FC = () => {
                         onJoinVoice={handleJoinVoice}
                         onOpenSettings={() => setState(s => ({...s, showSettings: true}))}
                         onOpenServerSettings={!isHome && activeServer ? () => setState(s => ({...s, viewMode: 'server-settings'})) : undefined}
-                        onOpenBoost={!isHome && activeServer ? () => setState(s => ({...s, showBoost: true})) : undefined}
+                        onOpenDonations={() => setState(s => ({...s, showDonations: true}))}
                         onOpenApplications={!isHome && activeServer ? () => setState(s => ({...s, showApplications: true})) : undefined}
                         onOpenActivities={() => setState(s => ({...s, showActivities: true}))}
                         isHome={isHome}

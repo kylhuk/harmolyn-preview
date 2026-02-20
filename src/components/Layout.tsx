@@ -16,6 +16,7 @@ import { KeyboardShortcutsOverlay } from '@/components/KeyboardShortcutsOverlay'
 import { DonationScreen, ShopScreen, QuestsScreen } from '@/components/monetization';
 import { ServerApplications } from '@/components/ServerApplications';
 import { ActivityLauncher } from '@/components/voice/ActivityLauncher';
+import { SecurityOnboarding } from '@/components/onboarding/SecurityOnboarding';
 import { useFeature } from '@/hooks/useFeature';
 import { SERVERS, USERS, MOCK_MESSAGES, CURRENT_USER, DIRECT_MESSAGES } from '@/data';
 import { Channel, AppState, MessageLayout } from '@/types';
@@ -42,6 +43,7 @@ export const Layout: React.FC = () => {
     showActivities: false,
   });
 
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('harmolyn_onboarding_dismissed'));
   const [showFriends, setShowFriends] = useState(true);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const hasQuickSwitcher = useFeature('quickSwitcher');
@@ -212,6 +214,7 @@ export const Layout: React.FC = () => {
 
   return (
     <div ref={mainRef} className="flex h-screen w-full bg-bg-0 overflow-hidden font-sans relative" style={themeStyle}>
+      {showOnboarding && <SecurityOnboarding onClose={() => setShowOnboarding(false)} />}
       <AnimatePresence mode="wait">
         {state.showSettings && (
           <FullScreenOverlay key="settings">

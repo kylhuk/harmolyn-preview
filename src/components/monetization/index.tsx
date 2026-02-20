@@ -1,34 +1,19 @@
 
 import React, { useState } from 'react';
-import { Zap, Crown, Sparkles, Palette, Upload, Star, Gift, ChevronRight, X, ShoppingBag, Gamepad2, Trophy, Clock, CheckCircle2, Lock } from 'lucide-react';
+import { X, ShoppingBag, Trophy, Clock, CheckCircle2, Gift, Heart, ExternalLink } from 'lucide-react';
 
-/* ===== Nitro ===== */
+/* ===== Donation Page ===== */
 
-interface NitroPlan {
-  id: string;
-  name: string;
-  price: string;
-  period: string;
-  perks: string[];
-  color: string;
-  popular?: boolean;
-}
-
-const NITRO_PLANS: NitroPlan[] = [
-  {
-    id: 'basic', name: 'Nitro Basic', price: '$2.99', period: '/month',
-    perks: ['50 MB upload limit', 'Custom emoji anywhere', 'HD video streaming', 'Special badge'],
-    color: '#13DDEC',
-  },
-  {
-    id: 'standard', name: 'Nitro', price: '$9.99', period: '/month',
-    perks: ['500 MB upload limit', 'Custom emoji + stickers', '4K/60fps streaming', '2 Server Boosts', 'Animated avatar', 'Custom profiles', 'Priority support'],
-    color: '#A855F7', popular: true,
-  },
+const DONATION_TIERS = [
+  { id: 'coffee', label: '☕ Coffee', amount: '$3', description: 'Buy the team a coffee' },
+  { id: 'supporter', label: '💜 Supporter', amount: '$10', description: 'Support monthly development' },
+  { id: 'champion', label: '🚀 Champion', amount: '$25', description: 'Champion the cause' },
+  { id: 'custom', label: '✨ Custom', amount: '', description: 'Choose your own amount' },
 ];
 
-export const NitroScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+export const DonationScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [customAmount, setCustomAmount] = useState('');
 
   return (
     <div className="absolute inset-0 z-[100] bg-bg-0 overflow-y-auto no-scrollbar animate-in fade-in duration-200">
@@ -38,60 +23,69 @@ export const NitroScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
       {/* Hero */}
       <div className="relative overflow-hidden py-16 px-6 text-center">
-        <div className="absolute inset-0 bg-gradient-to-br from-accent-purple/15 via-primary/10 to-pink-500/10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-accent-danger/10 via-primary/10 to-accent-success/10" />
         <div className="absolute inset-0 grid-overlay opacity-15" />
         <div className="relative">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent-purple to-pink-500 flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(168,85,247,0.4)]">
-            <Crown size={36} className="text-white" />
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-accent-danger to-primary flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(255,42,109,0.3)]">
+            <Heart size={36} className="text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white font-display tracking-tight mb-2">HARMOLYN NITRO</h1>
-          <p className="text-sm text-white/40 max-w-md mx-auto">Unlock the full potential of your Harmolyn experience with premium features and perks.</p>
+          <h1 className="text-3xl font-bold text-white font-display tracking-tight mb-2">SUPPORT HARMOLYN</h1>
+          <p className="text-sm text-white/40 max-w-md mx-auto">
+            Harmolyn is free and open. Your donations fund development, infrastructure, and keep the project alive.
+          </p>
         </div>
       </div>
 
-      {/* Plans */}
-      <div className="max-w-[600px] mx-auto px-6 pb-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {NITRO_PLANS.map(plan => (
-            <div
-              key={plan.id}
-              onClick={() => setSelectedPlan(plan.id)}
-              className={`glass-card rounded-r2 p-5 border cursor-pointer transition-all relative overflow-hidden ${
-                selectedPlan === plan.id
+      {/* Tiers */}
+      <div className="max-w-[520px] mx-auto px-6 pb-12">
+        <div className="micro-label text-white/30 mb-4">CHOOSE A TIER</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {DONATION_TIERS.map(tier => (
+            <button
+              key={tier.id}
+              onClick={() => setSelectedTier(tier.id)}
+              className={`glass-card rounded-r2 p-5 border text-left transition-all ${
+                selectedTier === tier.id
                   ? 'border-primary/30 bg-primary/5'
                   : 'border-white/5 hover:border-white/10'
               }`}
             >
-              {plan.popular && (
-                <div className="absolute top-3 right-3">
-                  <span className="px-2 py-0.5 rounded-full bg-accent-purple/20 text-accent-purple text-[8px] font-bold uppercase">POPULAR</span>
-                </div>
-              )}
-              <div className="w-12 h-12 rounded-r2 flex items-center justify-center mb-4" style={{ backgroundColor: `${plan.color}15` }}>
-                <Sparkles size={22} style={{ color: plan.color }} />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
-              <div className="flex items-baseline gap-0.5 mb-4">
-                <span className="text-2xl font-bold text-white font-display">{plan.price}</span>
-                <span className="text-xs text-white/30">{plan.period}</span>
-              </div>
-              <div className="space-y-2">
-                {plan.perks.map((perk, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[11px] text-white/50">
-                    <CheckCircle2 size={12} style={{ color: plan.color }} />
-                    <span>{perk}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+              <div className="text-lg mb-1">{tier.label}</div>
+              {tier.amount && <div className="text-xl font-bold text-white font-display">{tier.amount}</div>}
+              <p className="text-[11px] text-white/40 mt-1">{tier.description}</p>
+            </button>
           ))}
         </div>
 
-        {selectedPlan && (
-          <button className="w-full py-4 rounded-full bg-gradient-to-r from-accent-purple to-pink-500 text-white font-bold text-sm hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] transition-all">
-            SUBSCRIBE NOW
+        {selectedTier === 'custom' && (
+          <div className="mb-6">
+            <label className="micro-label text-white/30 mb-2 block">CUSTOM AMOUNT</label>
+            <input
+              type="text"
+              value={customAmount}
+              onChange={e => setCustomAmount(e.target.value)}
+              placeholder="$5.00"
+              className="w-full h-14 px-6 rounded-full bg-surface-dark border border-white/10 text-white text-lg font-display placeholder:text-white/20 focus:border-primary/50 focus:outline-none"
+            />
+          </div>
+        )}
+
+        {selectedTier && (
+          <button className="w-full py-4 rounded-full bg-primary text-bg-0 font-bold text-sm hover:shadow-glow transition-all flex items-center justify-center gap-2">
+            <Heart size={16} />
+            DONATE NOW
           </button>
         )}
+
+        <div className="mt-8 glass-card rounded-r2 p-5 border border-white/5">
+          <div className="micro-label text-white/30 mb-3">WHERE DONATIONS GO</div>
+          <div className="space-y-2 text-[12px] text-white/50">
+            <div className="flex items-center gap-2"><span className="text-primary">▸</span> Server infrastructure &amp; hosting</div>
+            <div className="flex items-center gap-2"><span className="text-primary">▸</span> Core development &amp; bug fixes</div>
+            <div className="flex items-center gap-2"><span className="text-primary">▸</span> Security audits &amp; encryption research</div>
+            <div className="flex items-center gap-2"><span className="text-primary">▸</span> Community tools &amp; documentation</div>
+          </div>
+        </div>
       </div>
     </div>
   );

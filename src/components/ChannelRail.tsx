@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Server, User, UserStatus } from '@/types';
-import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, LogOut, Radio, PanelLeftClose, PanelLeftOpen, ArrowUpDown, Zap, FileText } from 'lucide-react';
+import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, LogOut, Radio, PanelLeftClose, PanelLeftOpen, ArrowUpDown, Zap, FileText, Heart } from 'lucide-react';
 import { USERS, DIRECT_MESSAGES, CURRENT_USER } from '@/data';
 import { StatusPicker } from '@/components/StatusPicker';
 import { AccountSwitcher } from '@/components/AccountSwitcher';
@@ -19,7 +19,7 @@ interface ChannelRailProps {
   onJoinVoice: (id: string) => void;
   onOpenSettings: () => void;
   onOpenServerSettings?: () => void;
-  onOpenBoost?: () => void;
+  onOpenDonations?: () => void;
   onOpenApplications?: () => void;
   onOpenActivities?: () => void;
   isHome?: boolean;
@@ -36,7 +36,7 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
   onJoinVoice,
   onOpenSettings,
   onOpenServerSettings,
-  onOpenBoost,
+  onOpenDonations,
   onOpenApplications,
   onOpenActivities,
   isHome 
@@ -69,9 +69,9 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
             <h2 className="font-bold theme-text truncate micro-label text-xs tracking-widest">{isHome ? 'System Hub' : server?.name}</h2>
         </div>
         <div className="flex items-center gap-1">
-          {!isHome && onOpenBoost && (
-            <button onClick={onOpenBoost} className="theme-text-dim hover:text-accent-purple transition-colors" aria-label="Server Boost" title="Boost Server">
-              <Zap size={14} />
+          {onOpenDonations && (
+            <button onClick={onOpenDonations} className="theme-text-dim hover:text-accent-danger transition-colors" aria-label="Support Harmolyn" title="Donate">
+              <Heart size={14} />
             </button>
           )}
           {!isHome && onOpenApplications && (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, Shield, Key, Bell, Monitor, LogOut, ChevronRight, Smartphone, Lock, Fingerprint, QrCode, Eye, Command, Accessibility, Crown, ShoppingBag, Trophy, Zap } from 'lucide-react';
+import { X, User, Shield, Key, Bell, Monitor, LogOut, ChevronRight, Smartphone, Lock, Fingerprint, QrCode, Eye, Command, Accessibility, Heart, ShoppingBag, Trophy, Zap } from 'lucide-react';
 import { User as UserType } from '@/types';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { useFeature } from '@/hooks/useFeature';
@@ -8,14 +8,14 @@ import { usePerformanceMode } from '@/hooks/usePerformanceMode';
 interface SettingsScreenProps {
   user: UserType;
   onClose: () => void;
-  onOpenNitro?: () => void;
+  onOpenDonations?: () => void;
   onOpenShop?: () => void;
   onOpenQuests?: () => void;
 }
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose, onOpenNitro, onOpenShop, onOpenQuests }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose, onOpenDonations, onOpenShop, onOpenQuests }) => {
   const [activeSection, setActiveSection] = useState('account');
-  const hasNitro = useFeature('nitro');
+  const hasDonations = useFeature('donations');
   const hasShop = useFeature('shop');
   const hasQuests = useFeature('quests');
 
@@ -38,8 +38,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ user, onClose, o
              <SettingsItem icon={<Smartphone size={16} />} label="Mobile Sync" active={activeSection === 'mobile'} onClick={() => setActiveSection('mobile')} />
               
               <div className="h-6"></div>
-              <div className="micro-label text-white/20 px-3 mb-3">Premium</div>
-              {hasNitro && <SettingsItem icon={<Crown size={16} />} label="Harmolyn Nitro" active={false} onClick={onOpenNitro} />}
+               <div className="micro-label text-white/20 px-3 mb-3">Support</div>
+               {hasDonations && <SettingsItem icon={<Heart size={16} />} label="Donate" active={false} onClick={onOpenDonations} />}
               {hasShop && <SettingsItem icon={<ShoppingBag size={16} />} label="Shop" active={false} onClick={onOpenShop} />}
               {hasQuests && <SettingsItem icon={<Trophy size={16} />} label="Quests" active={false} onClick={onOpenQuests} />}
 

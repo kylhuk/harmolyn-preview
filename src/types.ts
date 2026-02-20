@@ -77,10 +77,9 @@ export interface AppState {
   // Modals
   showCreateServer: boolean;
   showSettings: boolean;
-  showNitro: boolean;
+  showDonations: boolean;
   showShop: boolean;
   showQuests: boolean;
-  showBoost: boolean;
   showApplications: boolean;
   showActivities: boolean;
 }

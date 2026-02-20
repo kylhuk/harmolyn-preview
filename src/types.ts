@@ -1,5 +1,6 @@
 
 export type UserStatus = 'online' | 'idle' | 'dnd' | 'offline';
+export type DonationTier = 'coffee' | 'supporter' | 'champion';
 export type MessageLayout = 'modern' | 'bubbles' | 'terminal';
 
 export interface User {
@@ -12,6 +13,7 @@ export interface User {
   bio?: string;
   joinedAt?: string;
   muted?: boolean;
+  donationTier?: DonationTier;
 }
 
 export interface Message {

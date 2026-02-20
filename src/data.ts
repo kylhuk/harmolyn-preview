@@ -7,13 +7,14 @@ export const CURRENT_USER: User = {
   status: 'online',
   color: '#13DDEC',
   bio: 'SYSTEM // OPERATOR // NEON GRID',
-  joinedAt: 'NOV 2024'
+  joinedAt: 'NOV 2024',
+  donationTier: 'champion',
 };
 
 export const USERS: User[] = [
   CURRENT_USER,
-  { id: 'u1', username: 'Cipher_Punk', avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop', status: 'dnd', role: 'Admin', color: '#FF2A6D', bio: 'ENCRYPTION // SPECIALIST', joinedAt: 'JAN 2024' },
-  { id: 'u2', username: 'Glitch.exe', avatar: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop', status: 'online', role: 'Moderator', color: '#05FFA1', bio: 'ERROR // HANDLER', joinedAt: 'FEB 2024' },
+  { id: 'u1', username: 'Cipher_Punk', avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop', status: 'dnd', role: 'Admin', color: '#FF2A6D', bio: 'ENCRYPTION // SPECIALIST', joinedAt: 'JAN 2024', donationTier: 'supporter' },
+  { id: 'u2', username: 'Glitch.exe', avatar: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop', status: 'online', role: 'Moderator', color: '#05FFA1', bio: 'ERROR // HANDLER', joinedAt: 'FEB 2024', donationTier: 'coffee' },
   { id: 'u3', username: 'ByteWalker', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop', status: 'idle', role: 'Member', color: '#F6F8F8', bio: 'DATA // NOMAD', joinedAt: 'MAR 2024' },
   { id: 'u4', username: 'NullSet', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop', status: 'offline', role: 'Member', color: '#F6F8F8', bio: 'UNDEFINED // ENTITY', joinedAt: 'APR 2024' },
 ];

@@ -18,6 +18,7 @@ import { MentionAutocomplete } from '@/components/MentionAutocomplete';
 import { useFeature } from '@/hooks/useFeature';
 import { useContextMenu } from '@/components/GlobalContextMenu';
 import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3, Link2, ArrowDown, MessageCircle, Inbox } from 'lucide-react';
+import { DonorBadge } from '@/components/DonorBadge';
 
 // Action button sub-component for message interactions
 const ActionBtn = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick?: () => void }) => (
@@ -84,6 +85,7 @@ const UsernameDisplay = ({ user, compact = false }: { user: User, compact?: bool
       >
         {user.username}
       </span>
+      {user.donationTier && <DonorBadge tier={user.donationTier} compact />}
       {!compact && (
         <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor(user.status)}`} title={user.status}></div>
       )}
@@ -127,6 +129,11 @@ const UserPopup = ({ user, children }: { user: User, children?: React.ReactNode 
                             </div>
                         </div>
                         <h3 className="font-bold text-xl text-white font-display mb-1">{user.username}</h3>
+                        {user.donationTier && (
+                          <div className="mb-2">
+                            <DonorBadge tier={user.donationTier} />
+                          </div>
+                        )}
                         <p className="micro-label text-primary/60 tracking-widest mb-3">OP // {user.id.toUpperCase()}</p>
                         <div className="bg-white/5 rounded-r1 p-3 border border-white/5 mb-3">
                             <div className="micro-label text-white/40 mb-1.5">BIO // DECRYPTED</div>

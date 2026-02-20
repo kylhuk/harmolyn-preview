@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
-import { X, ShoppingBag, Trophy, Clock, CheckCircle2, Gift, Heart, ExternalLink } from 'lucide-react';
+import { X, ShoppingBag, Trophy, Clock, CheckCircle2, Gift, Heart, Coffee, HeartHandshake, Rocket, Sparkles } from 'lucide-react';
+import { DONATION_TIER_CONFIG, type DonationTier } from '@/components/DonorBadge';
 
 /* ===== Donation Page ===== */
 
 const DONATION_TIERS = [
-  { id: 'coffee', label: '☕ Coffee', amount: '$3', description: 'Buy the team a coffee' },
-  { id: 'supporter', label: '💜 Supporter', amount: '$10', description: 'Support monthly development' },
-  { id: 'champion', label: '🚀 Champion', amount: '$25', description: 'Champion the cause' },
-  { id: 'custom', label: '✨ Custom', amount: '', description: 'Choose your own amount' },
+  { id: 'coffee' as DonationTier, amount: '$3/mo', description: 'Buy the team a coffee every month' },
+  { id: 'supporter' as DonationTier, amount: '$10/mo', description: 'Support monthly development' },
+  { id: 'champion' as DonationTier, amount: '$25/mo', description: 'Champion the cause — maximum impact' },
+  { id: 'custom' as const, amount: '', description: 'Choose your own recurring amount' },
 ];
 
 export const DonationScreen: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -38,23 +39,47 @@ export const DonationScreen: React.FC<{ onClose: () => void }> = ({ onClose }) =
 
       {/* Tiers */}
       <div className="max-w-[520px] mx-auto px-6 pb-12">
-        <div className="micro-label text-white/30 mb-4">CHOOSE A TIER</div>
+        <div className="micro-label text-white/30 mb-4">CHOOSE A RECURRING TIER</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-          {DONATION_TIERS.map(tier => (
-            <button
-              key={tier.id}
-              onClick={() => setSelectedTier(tier.id)}
-              className={`glass-card rounded-r2 p-5 border text-left transition-all ${
-                selectedTier === tier.id
-                  ? 'border-primary/30 bg-primary/5'
-                  : 'border-white/5 hover:border-white/10'
-              }`}
-            >
-              <div className="text-lg mb-1">{tier.label}</div>
-              {tier.amount && <div className="text-xl font-bold text-white font-display">{tier.amount}</div>}
-              <p className="text-[11px] text-white/40 mt-1">{tier.description}</p>
-            </button>
-          ))}
+          {DONATION_TIERS.map(tier => {
+            const config = tier.id !== 'custom' ? DONATION_TIER_CONFIG[tier.id as DonationTier] : null;
+            return (
+              <button
+                key={tier.id}
+                onClick={() => setSelectedTier(tier.id)}
+                className={`glass-card rounded-r2 p-5 border text-left transition-all ${
+                  selectedTier === tier.id
+                    ? 'border-primary/30 bg-primary/5'
+                    : 'border-white/5 hover:border-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 mb-2">
+                  {config ? (
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: `${config.color}15`, color: config.color, boxShadow: `0 0 12px ${config.glow}` }}
+                    >
+                      {React.cloneElement(config.icon as React.ReactElement, { size: 18 })}
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 text-white/40">
+                      <Sparkles size={18} />
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-sm font-bold text-white">{config?.label || 'Custom'}</div>
+                    {tier.amount && <div className="text-lg font-bold text-white font-display">{tier.amount}</div>}
+                  </div>
+                </div>
+                <p className="text-[11px] text-white/40">{tier.description}</p>
+                {config && (
+                  <div className="mt-2 text-[9px] uppercase tracking-wider font-bold" style={{ color: config.color }}>
+                    Badge shown in chat &amp; profile
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {selectedTier === 'custom' && (

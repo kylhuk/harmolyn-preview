@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { User } from '@/types';
 import { PanelRightClose, Clock, X } from 'lucide-react';
 import { useFeature } from '@/hooks/useFeature';
+import { DonorBadge } from '@/components/DonorBadge';
 
 interface MemberSidebarProps {
   members: User[];
@@ -126,7 +127,10 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <div className="text-xs font-bold theme-text-secondary group-hover:theme-text truncate" style={u.status !== 'offline' ? {color: u.color} : {}}>{u.username}</div>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <div className="text-xs font-bold theme-text-secondary group-hover:theme-text truncate" style={u.status !== 'offline' ? {color: u.color} : {}}>{u.username}</div>
+                        {u.donationTier && <DonorBadge tier={u.donationTier} compact />}
+                      </div>
                       {u.status !== 'offline' && <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor(u.status).split(' ')[0]}`}></div>}
                     </div>
                     <div className="flex items-center gap-1.5">

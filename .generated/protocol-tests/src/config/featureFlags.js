@@ -1,0 +1,114 @@
+/**
+ * Harmolyn Feature Flags
+ *
+ * Centralized feature toggle system. Set a flag to `true` to enable the feature UI.
+ * Features flagged `false` are hidden but their code remains — flip to `true` when
+ * the backend is ready.
+ */
+export const FEATURES = {
+    // ─── App Shell ───────────────────────────────────────────
+    multiPaneLayout: true,
+    serverNavigation: true,
+    mobileBottomNav: true,
+    contextMenus: true,
+    quickSwitcher: true,
+    serverFolders: true,
+    // ─── Auth ────────────────────────────────────────────────
+    loginScreen: true,
+    registerScreen: true,
+    qrLogin: true,
+    mfa: true,
+    accountSwitching: true,
+    // ─── User ────────────────────────────────────────────────
+    userStatus: true,
+    profileCustomization: true,
+    serverProfile: true,
+    friendsList: true,
+    userPopout: true,
+    // ─── Messaging ───────────────────────────────────────────
+    markdownComposer: true,
+    messageReactions: true,
+    messageReplies: true,
+    pinnedMessages: true,
+    messageEditing: true,
+    fileUploads: true,
+    emojiPicker: true,
+    typingIndicators: true,
+    linkEmbeds: true,
+    spoilerText: true,
+    messageForwarding: true,
+    polls: true,
+    threads: true,
+    voiceMessages: true,
+    slashCommands: true,
+    messageLinks: true,
+    superReactions: true,
+    slowmode: true,
+    jumpToPresent: true,
+    unreadDivider: true,
+    imageLightbox: true,
+    deleteConfirmation: true,
+    mentionAutocomplete: true,
+    // ─── Voice & Video ───────────────────────────────────────
+    voiceJoinLeave: true,
+    screenShare: true,
+    soundboard: true,
+    activities: true,
+    dmCalls: true,
+    stageChannels: true,
+    voiceTextChat: true,
+    voiceControlBar: true,
+    // ─── Channels ────────────────────────────────────────────
+    textVoiceChannels: true,
+    channelCategories: true,
+    forumChannels: true,
+    announcementChannels: true,
+    privateChannels: true,
+    channelFollowing: true,
+    scheduledEvents: true,
+    channelCreationFlow: true,
+    channelPinsView: true,
+    // ─── Server ──────────────────────────────────────────────
+    serverSettings: true,
+    serverDiscovery: true,
+    rolesManagement: true,
+    membersManagement: true,
+    serverBoost: false,
+    serverApplications: true,
+    joinViaInvite: true,
+    vanityUrls: true,
+    // ─── Community ───────────────────────────────────────────
+    communityOnboarding: true,
+    serverGuide: true,
+    browseChannels: true,
+    discoverTab: true,
+    // ─── Direct Messages ─────────────────────────────────────
+    directMessages: true,
+    messageRequests: true,
+    // ─── Moderation ──────────────────────────────────────────
+    autoMod: true,
+    auditLog: true,
+    timeout: true,
+    roleHierarchyDragDrop: true,
+    duplicateChannel: true,
+    // ─── Search & Navigation ─────────────────────────────────
+    advancedSearch: true,
+    inbox: true,
+    searchShortcuts: true,
+    // ─── Settings ────────────────────────────────────────────
+    themeSelection: true,
+    accessibilitySettings: true,
+    keyboardShortcuts: true,
+    notificationSettings: true,
+    // ─── Notifications ───────────────────────────────────────
+    desktopNotifications: true,
+    muteChannel: true,
+    roleMentionSuppression: true,
+    // ─── Monetization ────────────────────────────────────────
+    donations: true,
+    shop: true,
+    quests: true,
+    serverTags: true,
+    // ─── Other Implemented ───────────────────────────────────
+    memberListPanel: true,
+};

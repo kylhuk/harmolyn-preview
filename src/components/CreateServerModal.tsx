@@ -1,11 +1,39 @@
-import React from 'react';
-import { X, Upload, Plus, ChevronRight, Globe, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Upload, Globe, Lock, Loader2, Link as LinkIcon } from 'lucide-react';
 
 interface CreateServerModalProps {
     onClose: () => void;
+    onCreate: (input: { name: string; description?: string }) => Promise<void>;
+    onOpenJoin: () => void;
 }
 
-export const CreateServerModal: React.FC<CreateServerModalProps> = ({ onClose }) => {
+export const CreateServerModal: React.FC<CreateServerModalProps> = ({ onClose, onCreate, onOpenJoin }) => {
+    const [name, setName] = useState('');
+    const [visibility, setVisibility] = useState<'private' | 'public'>('public');
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleCreate = async () => {
+        const trimmed = name.trim();
+        if (!trimmed) {
+            setError('Node name is required.');
+            return;
+        }
+
+        setSubmitting(true);
+        setError('');
+        try {
+            await onCreate({
+                name: trimmed,
+                description: '',
+            });
+        } catch (nextError) {
+            setError(nextError instanceof Error ? nextError.message : 'Failed to create the server.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 md:p-6 animate-in fade-in duration-300">
             <div className="absolute inset-0 bg-bg-0/90 backdrop-blur-md" onClick={onClose}></div>
@@ -35,34 +63,75 @@ export const CreateServerModal: React.FC<CreateServerModalProps> = ({ onClose })
                             <label className="micro-label text-white/20 mb-1.5 block">Node Name</label>
                             <input 
                                 type="text" 
+                                value={name}
+                                onChange={(event) => {
+                                    setName(event.target.value);
+                                    if (error) {
+                                        setError('');
+                                    }
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' && !submitting) {
+                                        event.preventDefault();
+                                        void handleCreate();
+                                    }
+                                }}
                                 placeholder="THE // HUB" 
+                                disabled={submitting}
                                 className="w-full bg-bg-0/50 border border-white/10 rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:border-primary focus:shadow-glow transition-all font-mono placeholder-white/10 focus-ring" 
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 rounded-r2 border border-white/5 glass-panel cursor-pointer hover:border-primary/40 transition-all flex flex-col gap-1.5 btn-press">
+                            <button
+                                type="button"
+                                onClick={() => setVisibility('private')}
+                                disabled={submitting}
+                                className={`p-3 rounded-r2 border transition-all flex flex-col gap-1.5 btn-press text-left ${visibility === 'private' ? 'border-primary/20 bg-primary/5 shadow-glow' : 'border-white/5 glass-panel hover:border-primary/40'} disabled:opacity-60`}
+                            >
                                 <Lock size={16} className="text-primary" />
                                 <div className="font-bold text-xs text-white">Private</div>
                                 <div className="text-[9px] text-white/30">Restricted access</div>
-                            </div>
-                            <div className="p-3 rounded-r2 border border-primary/20 bg-primary/5 cursor-pointer flex flex-col gap-1.5 relative shadow-glow btn-press">
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setVisibility('public')}
+                                disabled={submitting}
+                                className={`p-3 rounded-r2 border cursor-pointer flex flex-col gap-1.5 relative btn-press text-left ${visibility === 'public' ? 'border-primary/20 bg-primary/5 shadow-glow' : 'border-white/5 glass-panel hover:border-primary/40'} disabled:opacity-60`}
+                            >
                                 <Globe size={16} className="text-primary" />
                                 <div className="font-bold text-xs text-white">Public</div>
                                 <div className="text-[9px] text-white/30">Discoverable node</div>
-                                <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary shadow-glow"></div>
-                            </div>
+                                {visibility === 'public' && <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary shadow-glow"></div>}
+                            </button>
                         </div>
+
+                        {error && (
+                            <div className="rounded-r2 border border-accent-danger/20 bg-accent-danger/10 px-4 py-3 text-[11px] text-accent-danger" role="alert">
+                                {error}
+                            </div>
+                        )}
                     </div>
                     
                     <div className="text-[9px] text-white/20 text-center font-light px-3">
                         By establishing this node, you confirm adherence to the <span className="text-primary cursor-pointer hover:underline">Nexus Security Protocol</span>.
                     </div>
+                    <button
+                        type="button"
+                        onClick={onOpenJoin}
+                        disabled={submitting}
+                        className="mt-5 w-full flex items-center justify-center gap-2 text-[10px] font-bold tracking-[0.22em] text-white/40 hover:text-primary transition-colors disabled:opacity-60"
+                    >
+                        <LinkIcon size={12} /> HAVE AN INVITE ALREADY?
+                    </button>
                 </div>
                 
                 <div className="bg-white/5 px-8 py-5 flex justify-between items-center border-t border-white/5 backdrop-blur-xl">
-                    <button onClick={onClose} className="text-white/40 hover:text-white micro-label transition-all">Cancel</button>
-                    <button onClick={onClose} className="bg-primary hover:bg-primary/90 text-bg-0 font-bold py-2.5 px-8 rounded-full micro-label tracking-tight shadow-glow hover:scale-105 transition-all btn-press">Initiate Matrix</button>
+                    <button onClick={onClose} disabled={submitting} className="text-white/40 hover:text-white micro-label transition-all disabled:opacity-60">Cancel</button>
+                    <button onClick={() => void handleCreate()} disabled={submitting} className="bg-primary hover:bg-primary/90 text-bg-0 font-bold py-2.5 px-8 rounded-full micro-label tracking-tight shadow-glow hover:scale-105 transition-all btn-press disabled:opacity-60 disabled:hover:scale-100 flex items-center gap-2">
+                        {submitting ? <Loader2 size={14} className="animate-spin" /> : null}
+                        Initiate Matrix
+                    </button>
                 </div>
             </div>
         </div>

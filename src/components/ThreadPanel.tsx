@@ -7,28 +7,19 @@ interface ThreadPanelProps {
   parentMessage: Message;
   parentUser: User;
   allUsers: User[];
+  replies: Message[];
+  onSend: (content: string) => void;
   onClose: () => void;
 }
 
-const MOCK_THREAD_REPLIES: Message[] = [
-  { id: 'tr1', userId: 'u2', content: 'Good point, I think we should investigate further.', timestamp: '10:32 AM' },
-  { id: 'tr2', userId: 'u3', content: 'I ran the diagnostics — everything checks out on my end.', timestamp: '10:45 AM' },
-];
-
-export const ThreadPanel: React.FC<ThreadPanelProps> = ({ parentMessage, parentUser, allUsers, onClose }) => {
-  const [replies, setReplies] = useState<Message[]>(MOCK_THREAD_REPLIES);
+export const ThreadPanel: React.FC<ThreadPanelProps> = ({ parentMessage, parentUser, allUsers, replies, onSend, onClose }) => {
   const [input, setInput] = useState('');
 
   const getUser = (id: string): User => allUsers.find(u => u.id === id) || { id: 'unknown', username: 'Unknown', avatar: '', status: 'offline' as const };
 
   const handleSend = () => {
     if (!input.trim()) return;
-    setReplies(prev => [...prev, {
-      id: `tr-${Date.now()}`,
-      userId: 'me',
-      content: input,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    }]);
+    onSend(input.trim());
     setInput('');
   };
 

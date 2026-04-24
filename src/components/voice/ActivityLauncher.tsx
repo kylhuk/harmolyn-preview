@@ -32,13 +32,16 @@ const categoryIcons: Record<string, React.ReactNode> = {
 
 interface ActivityLauncherProps {
   onClose: () => void;
-  onLaunch?: (activityId: string) => void;
+  onLaunch?: (activityId: string) => Promise<void> | void;
+  disabledReason?: string;
+  activeActivityId?: string | null;
 }
 
-export const ActivityLauncher: React.FC<ActivityLauncherProps> = ({ onClose, onLaunch }) => {
+export const ActivityLauncher: React.FC<ActivityLauncherProps> = ({ onClose, onLaunch, disabledReason, activeActivityId }) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [launching, setLaunching] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const categories = ['all', 'games', 'music', 'creative', 'social'];
 
@@ -48,12 +51,20 @@ export const ActivityLauncher: React.FC<ActivityLauncherProps> = ({ onClose, onL
     return matchesSearch && matchesCat;
   });
 
-  const handleLaunch = (id: string) => {
+  const handleLaunch = async (id: string) => {
+    if (disabledReason) {
+      setError(disabledReason);
+      return;
+    }
     setLaunching(id);
-    setTimeout(() => {
-      onLaunch?.(id);
+    setError(null);
+    try {
+      await onLaunch?.(id);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to launch the activity.');
+    } finally {
       setLaunching(null);
-    }, 1500);
+    }
   };
 
   return (
@@ -61,14 +72,26 @@ export const ActivityLauncher: React.FC<ActivityLauncherProps> = ({ onClose, onL
       <div className="glass-card rounded-r3 border border-white/10 w-full max-w-[600px] max-h-[80vh] flex flex-col overflow-hidden shadow-2xl">
         {/* Header */}
         <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-white font-display tracking-tight">ACTIVITIES</h2>
-            <p className="micro-label text-white/30 mt-1">LAUNCH // PLAY // CONNECT</p>
-          </div>
+        <div>
+          <h2 className="text-lg font-bold text-white font-display tracking-tight">ACTIVITIES</h2>
+          <p className="micro-label text-white/30 mt-1">LAUNCH // PLAY // CONNECT</p>
+        </div>
           <button onClick={onClose} className="w-10 h-10 rounded-full border border-white/10 glass-panel flex items-center justify-center hover:border-primary hover:shadow-glow-sm transition-all">
             <X size={18} className="text-white/60 hover:text-primary" />
           </button>
         </div>
+
+        {disabledReason && (
+          <div className="mx-6 mt-4 rounded-r2 border border-accent-warning/20 bg-accent-warning/10 px-4 py-3 text-[10px] font-mono text-accent-warning">
+            {disabledReason}
+          </div>
+        )}
+
+        {error && (
+          <div className="mx-6 mt-4 rounded-r2 border border-accent-danger/20 bg-accent-danger/10 px-4 py-3 text-[10px] font-mono text-accent-danger">
+            {error}
+          </div>
+        )}
 
         {/* Search */}
         <div className="px-6 py-3">
@@ -108,10 +131,10 @@ export const ActivityLauncher: React.FC<ActivityLauncherProps> = ({ onClose, onL
               <div
                 key={activity.id}
                 className={`glass-card rounded-r2 p-4 border transition-all cursor-pointer group relative overflow-hidden ${
-                  launching === activity.id
+                  launching === activity.id || activeActivityId === activity.id
                     ? 'border-primary/40 bg-primary/5'
                     : 'border-white/5 hover:border-primary/20 hover:bg-white/[0.02]'
-                }`}
+                } ${disabledReason ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => handleLaunch(activity.id)}
               >
                 {activity.popular && (
@@ -125,6 +148,8 @@ export const ActivityLauncher: React.FC<ActivityLauncherProps> = ({ onClose, onL
                 }`}>
                   {launching === activity.id ? (
                     <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  ) : activeActivityId === activity.id ? (
+                    <Play size={24} className="text-primary" />
                   ) : activity.icon}
                 </div>
 
@@ -137,10 +162,10 @@ export const ActivityLauncher: React.FC<ActivityLauncherProps> = ({ onClose, onL
                     <span>Max {activity.maxPlayers}</span>
                   </div>
                   <div className={`flex items-center gap-1 text-[9px] font-bold transition-all ${
-                    launching === activity.id ? 'text-primary' : 'text-white/20 group-hover:text-primary'
+                    launching === activity.id || activeActivityId === activity.id ? 'text-primary' : 'text-white/20 group-hover:text-primary'
                   }`}>
                     <Play size={10} />
-                    <span>{launching === activity.id ? 'LAUNCHING...' : 'LAUNCH'}</span>
+                    <span>{launching === activity.id ? 'LAUNCHING...' : activeActivityId === activity.id ? 'ACTIVE' : 'LAUNCH'}</span>
                   </div>
                 </div>
               </div>

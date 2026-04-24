@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowRight, Shield, Check } from 'lucide-react';
+import { readBrowserAuthContext, submitRegistration } from '@/lib/authPreview';
 
 interface RegisterScreenProps {
   onRegister: () => void;
@@ -14,6 +15,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onSw
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [feedback, setFeedback] = useState<{ tone: 'error' | 'info'; message: string } | null>(null);
+  const authContext = readBrowserAuthContext();
 
   const passwordStrength = (() => {
     if (password.length === 0) return { label: '', color: '', width: '0%' };
@@ -24,14 +27,18 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onSw
     return { label: 'GOOD', color: 'text-primary', width: '75%' };
   })();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreed || password !== confirmPassword) return;
+    setFeedback(null);
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    const result = submitRegistration({ username, email, password, confirmPassword, agreed });
+    setLoading(false);
+    if (result.ok) {
       onRegister();
-    }, 1500);
+      return;
+    }
+    setFeedback({ tone: result.code === 'invalid' ? 'error' : 'info', message: result.message });
   };
 
   return (
@@ -50,7 +57,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onSw
           <p className="micro-label text-text-tertiary mt-2">INITIALIZE // IDENTITY // PROTOCOL</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="glass-card rounded-r3 p-8 border border-stroke space-y-4">
+        <form noValidate onSubmit={handleSubmit} className="glass-card rounded-r3 p-8 border border-stroke space-y-4">
+          <div className="text-center">
+            <p className="text-micro text-text-disabled uppercase tracking-[0.18em]">
+              {authContext.hasRuntimeIdentity
+                ? `Local runtime detected // ${authContext.identityLabel}`
+                : 'Registration preview only // no local xorein identity detected'}
+            </p>
+          </div>
+
+          {feedback && (
+            <div
+              role="alert"
+              className={`rounded-r2 border px-4 py-3 text-caption ${feedback.tone === 'error' ? 'border-accent-danger/30 bg-accent-danger/10 text-accent-danger' : 'border-primary/30 bg-primary/10 text-primary'}`}
+            >
+              {feedback.message}
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <label className="micro-label text-text-tertiary">OPERATOR ALIAS</label>
             <input
@@ -132,7 +156,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onRegister, onSw
 
           <button
             type="submit"
-            disabled={loading || !agreed}
+            disabled={loading}
             className="w-full h-14 rounded-full bg-primary text-bg-0 font-bold text-body-strong flex items-center justify-center gap-2 hover:shadow-glow transition-all disabled:opacity-40 mt-2"
           >
             {loading ? (

@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "build:dev": "vite build --mode development",
     "build:protocol": "tsc -p tsconfig.protocol.json",
-    "test:protocol": "npm run build:protocol && node ./scripts/run-protocol-tests.mjs"
+    "test:protocol": "npm run build:protocol && node ./scripts/run-protocol-tests.mjs",
+    "test:browser": "node ./scripts/browser-smoke.mjs",
+    "test:browser:missing-runtime": "node ./scripts/browser-smoke.mjs missing-runtime"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
@@ -26,6 +28,7 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "playwright-core": "^1.59.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { SERVERS, DIRECT_MESSAGES, USERS } from '@/data';
-import { Server, Channel } from '@/types';
 import { Send, X, Hash, AtSign, Search, ChevronRight } from 'lucide-react';
 
 interface ForwardMessageModalProps {
   messageContent: string;
+  destinations: Destination[];
+  onForward: (destinations: Destination[], note: string) => void;
   onClose: () => void;
 }
 
@@ -15,38 +15,14 @@ interface Destination {
   type: 'channel' | 'dm';
 }
 
-export const ForwardMessageModal: React.FC<ForwardMessageModalProps> = ({ messageContent, onClose }) => {
+export const ForwardMessageModal: React.FC<ForwardMessageModalProps> = ({ messageContent, destinations, onForward, onClose }) => {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Destination[]>([]);
   const [note, setNote] = useState('');
 
-  const allDestinations: Destination[] = [
-    ...DIRECT_MESSAGES.map(dm => {
-      const user = USERS.find(u => u.id === dm.userId);
-      return {
-        id: dm.id,
-        label: user?.username || 'Unknown',
-        sublabel: 'Direct Message',
-        type: 'dm' as const,
-      };
-    }),
-    ...SERVERS.flatMap(s =>
-      s.categories.flatMap(c =>
-        c.channels
-          .filter(ch => ch.type === 'text')
-          .map(ch => ({
-            id: ch.id,
-            label: ch.name,
-            sublabel: s.name,
-            type: 'channel' as const,
-          }))
-      )
-    ),
-  ];
-
   const filtered = query.trim()
-    ? allDestinations.filter(d => d.label.toLowerCase().includes(query.toLowerCase()))
-    : allDestinations;
+    ? destinations.filter(d => d.label.toLowerCase().includes(query.toLowerCase()))
+    : destinations;
 
   const toggleSelect = (dest: Destination) => {
     if (selected.find(s => s.id === dest.id)) {
@@ -57,7 +33,7 @@ export const ForwardMessageModal: React.FC<ForwardMessageModalProps> = ({ messag
   };
 
   const handleForward = () => {
-    // Mock forward — in production would call API
+    onForward(selected, note);
     onClose();
   };
 
@@ -136,6 +112,11 @@ export const ForwardMessageModal: React.FC<ForwardMessageModalProps> = ({ messag
               </button>
             );
           })}
+          {filtered.length === 0 && (
+            <div className="px-3 py-8 text-center text-[11px] text-white/35 font-mono">
+              No live destinations matched this query.
+            </div>
+          )}
         </div>
 
         {/* Note */}

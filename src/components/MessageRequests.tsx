@@ -1,31 +1,27 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Check, X, Shield, MessageSquare } from 'lucide-react';
-import { User } from '@/types';
 import { USERS } from '@/data';
 
-interface MessageRequest {
+export interface MessageRequest {
   id: string;
   userId: string;
   preview: string;
   timestamp: string;
 }
 
-const MOCK_REQUESTS: MessageRequest[] = [
+export const DEFAULT_MESSAGE_REQUESTS: MessageRequest[] = [
   { id: 'mr1', userId: 'u4', preview: 'Hey, saw your post in the dev channel...', timestamp: '2 hours ago' },
   { id: 'mr2', userId: 'u5', preview: 'Are you interested in joining our project?', timestamp: '5 hours ago' },
   { id: 'mr3', userId: 'u6', preview: 'Your encryption talk was awesome!', timestamp: '1 day ago' },
 ];
 
-export const MessageRequests: React.FC = () => {
-  const [requests, setRequests] = useState(MOCK_REQUESTS);
+interface MessageRequestsProps {
+  requests: MessageRequest[];
+  onAccept: (id: string) => void;
+  onIgnore: (id: string) => void;
+}
 
-  const handleAccept = (id: string) => {
-    setRequests(r => r.filter(req => req.id !== id));
-  };
-
-  const handleIgnore = (id: string) => {
-    setRequests(r => r.filter(req => req.id !== id));
-  };
+export const MessageRequests: React.FC<MessageRequestsProps> = ({ requests, onAccept, onIgnore }) => {
 
   if (requests.length === 0) {
     return (
@@ -55,17 +51,21 @@ export const MessageRequests: React.FC = () => {
                   <span className="text-micro text-text-disabled">{req.timestamp}</span>
                 </div>
                 <p className="text-caption text-text-secondary truncate">{req.preview}</p>
+                <div className="mt-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-text-disabled">
+                  <MessageSquare size={12} />
+                  Local preview request
+                </div>
               </div>
               <div className="flex gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={() => handleAccept(req.id)}
+                  onClick={() => onAccept(req.id)}
                   className="w-8 h-8 rounded-full bg-accent-success/10 border border-accent-success/20 flex items-center justify-center text-accent-success hover:bg-accent-success/20 transition-all"
                   aria-label="Accept request"
                 >
                   <Check size={14} />
                 </button>
                 <button
-                  onClick={() => handleIgnore(req.id)}
+                  onClick={() => onIgnore(req.id)}
                   className="w-8 h-8 rounded-full bg-accent-danger/10 border border-accent-danger/20 flex items-center justify-center text-accent-danger hover:bg-accent-danger/20 transition-all"
                   aria-label="Ignore request"
                 >

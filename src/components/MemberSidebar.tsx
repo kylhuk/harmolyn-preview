@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { User } from '@/types';
 import { PanelRightClose, Clock, X } from 'lucide-react';
@@ -8,12 +8,14 @@ import { DonorBadge } from '@/components/DonorBadge';
 
 interface MemberSidebarProps {
   members: User[];
+  currentUser: User;
+  serverOwnerId: string;
   collapsed: boolean;
   onToggleCollapse: () => void;
   isOverlay?: boolean;
 }
 
-const TimeoutModal: React.FC<{ user: User; onClose: () => void }> = ({ user, onClose }) => {
+const TimeoutModal: React.FC<{ user: User; onClose: () => void; onApply: (duration: string, reason: string) => void }> = ({ user, onClose, onApply }) => {
   const [duration, setDuration] = useState('60');
   const [reason, setReason] = useState('');
   const [applied, setApplied] = useState(false);
@@ -28,6 +30,7 @@ const TimeoutModal: React.FC<{ user: User; onClose: () => void }> = ({ user, onC
 
   const handleApply = () => {
     setApplied(true);
+    onApply(duration, reason);
     setTimeout(onClose, 1500);
   };
 
@@ -82,9 +85,20 @@ const TimeoutModal: React.FC<{ user: User; onClose: () => void }> = ({ user, onC
   );
 };
 
-export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed, onToggleCollapse, isOverlay }) => {
+export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, currentUser, serverOwnerId, collapsed, onToggleCollapse, isOverlay }) => {
   const hasTimeout = useFeature('timeout');
   const [timeoutTarget, setTimeoutTarget] = useState<User | null>(null);
+  const [timedOutUsers, setTimedOutUsers] = useState<Record<string, { duration: string; reason: string }>>({});
+  const [feedback, setFeedback] = useState<{ tone: 'error' | 'info' | 'success'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!feedback) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setFeedback(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
 
   const groups = {
     'OPERATORS': members.filter(m => m.status === 'online' || m.status === 'dnd'),
@@ -101,13 +115,42 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed
     }
   };
 
+  const canModerateTimeouts = currentUser.role === 'Admin' || currentUser.role === 'Moderator' || currentUser.id === serverOwnerId;
+
+  const handleTimeoutRequest = (user: User) => {
+    if (!canModerateTimeouts) {
+      setFeedback({ tone: 'info', message: `Permission denied: ${currentUser.username} cannot time out members in the local preview.` });
+      return;
+    }
+
+    if (user.role === 'Admin' || user.id === serverOwnerId || user.id === currentUser.id) {
+      setFeedback({ tone: 'info', message: `${user.username} is protected in the local preview and cannot be timed out.` });
+      return;
+    }
+
+    setTimeoutTarget(user);
+  };
+
+  const handleTimeoutApply = (user: User, duration: string, reason: string) => {
+    setTimedOutUsers((prev) => ({
+      ...prev,
+      [user.id]: { duration, reason },
+    }));
+    setFeedback({ tone: 'success', message: `Applied a ${duration}s timeout to ${user.username} locally${reason.trim() ? ` (${reason.trim()})` : ''}.` });
+  };
+
   return (
     <div className={`w-[224px] glass-realistic flex flex-col h-full ${isOverlay ? 'shadow-2xl' : ''}`}>
-      {timeoutTarget && <TimeoutModal user={timeoutTarget} onClose={() => setTimeoutTarget(null)} />}
+      {timeoutTarget && <TimeoutModal user={timeoutTarget} onClose={() => setTimeoutTarget(null)} onApply={(duration, reason) => handleTimeoutApply(timeoutTarget, duration, reason)} />}
       <div className="h-[52px] px-5 flex items-center justify-between border-b theme-border">
         <span className="micro-label theme-text-dim">Entities</span>
         <button onClick={onToggleCollapse} className="theme-text-dim hover:text-primary"><PanelRightClose size={16} /></button>
       </div>
+      {feedback && (
+        <div className={`mx-4 mt-4 rounded-r2 border px-3 py-2 text-[10px] ${feedback.tone === 'error' ? 'border-accent-danger/30 bg-accent-danger/10 text-accent-danger' : feedback.tone === 'success' ? 'border-accent-success/30 bg-accent-success/10 text-accent-success' : 'border-primary/30 bg-primary/10 text-primary'}`}>
+          {feedback.message}
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar">
         {Object.entries(groups).map(([name, users]) => (
           <div key={name}>
@@ -119,7 +162,7 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed
                   initial={{ opacity: 0, x: 12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-r1 hover:bg-white/5 active:bg-white/8 transition-all group cursor-pointer relative min-h-[48px]"
+                  className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-r1 hover:bg-white/5 active:bg-white/8 transition-all group cursor-pointer relative min-h-[48px] ${timedOutUsers[u.id] ? 'opacity-80' : ''}`}
                 >
                   <div className="relative">
                     <img src={u.avatar} className="w-[26px] h-[26px] rounded-r1 border theme-border grayscale-[0.3] group-hover:grayscale-0 transition-all" />
@@ -130,20 +173,22 @@ export const MemberSidebar: React.FC<MemberSidebarProps> = ({ members, collapsed
                       <div className="flex items-center gap-1 min-w-0">
                         <div className="text-xs font-bold theme-text-secondary group-hover:theme-text truncate" style={u.status !== 'offline' ? {color: u.color} : {}}>{u.username}</div>
                         {u.donationTier && <DonorBadge tier={u.donationTier} compact />}
+                        {timedOutUsers[u.id] && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full border border-accent-warning/20 bg-accent-warning/10 text-accent-warning">timeout</span>}
                       </div>
                       {u.status !== 'offline' && <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor(u.status).split(' ')[0]}`}></div>}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[8px] uppercase font-bold tracking-wider opacity-50" style={{ color: u.status === 'online' ? '#05FFA1' : u.status === 'dnd' ? '#FF2A6D' : u.status === 'idle' ? '#FFB020' : 'rgba(255,255,255,0.3)' }}>{u.status}</span>
+                      {timedOutUsers[u.id] && <span className="text-[8px] uppercase font-bold tracking-wider text-accent-warning">{timedOutUsers[u.id].duration}s hold</span>}
                       <div className="text-[9px] theme-text-dim font-mono truncate hidden group-hover:block transition-all"> // {u.bio?.substring(0, 15)}</div>
                     </div>
                   </div>
                   {/* Timeout action */}
-                  {hasTimeout && u.id !== 'u1' && (
+                  {hasTimeout && (
                     <button
-                      onClick={(e) => { e.stopPropagation(); setTimeoutTarget(u); }}
+                      onClick={(e) => { e.stopPropagation(); timedOutUsers[u.id] ? setFeedback({ tone: 'info', message: `${u.username} already has a local timeout applied.` }) : handleTimeoutRequest(u); }}
                       className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-accent-warning/10 text-white/0 group-hover:text-white/20 hover:!text-accent-warning transition-all"
-                      title="Timeout user"
+                      title={timedOutUsers[u.id] ? 'Timeout already applied' : 'Timeout user'}
                     >
                       <Clock size={12} />
                     </button>

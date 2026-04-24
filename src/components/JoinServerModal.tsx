@@ -1,39 +1,84 @@
-import React, { useState } from 'react';
-import { X, Link, ArrowRight, Shield, Users, Loader2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { X, Link, ArrowRight, Shield, Users, Loader2, AlertTriangle } from 'lucide-react';
+import { previewServerByInvite, type XoreinServerPreview } from '@/lib/xoreinControl';
+import type { XoreinRuntimeSnapshot } from '@/types';
 
 interface JoinServerModalProps {
   onClose: () => void;
-  onJoin?: (inviteCode: string) => void;
+  onJoin: (inviteCode: string) => Promise<void>;
+  initialValue?: string;
+  runtimeSnapshot?: XoreinRuntimeSnapshot | null;
 }
 
-export const JoinServerModal: React.FC<JoinServerModalProps> = ({ onClose, onJoin }) => {
-  const [inviteLink, setInviteLink] = useState('');
-  const [loading, setLoading] = useState(false);
+export const JoinServerModal: React.FC<JoinServerModalProps> = ({ onClose, onJoin, initialValue = '', runtimeSnapshot = null }) => {
+  const [inviteLink, setInviteLink] = useState(initialValue);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
-  const [preview, setPreview] = useState<{ name: string; members: number; icon: string } | null>(null);
+  const [preview, setPreview] = useState<XoreinServerPreview | null>(null);
 
-  const handlePaste = (value: string) => {
-    setInviteLink(value);
-    setError('');
-    // Simulate invite link resolution
-    if (value.includes('harmolyn.gg/') || value.length > 5) {
-      setLoading(true);
-      setTimeout(() => {
-        setPreview({ name: 'Cyber Collective', members: 1247, icon: '🌐' });
-        setLoading(false);
-      }, 800);
-    } else {
-      setPreview(null);
+  const previewSummary = useMemo(() => {
+    if (!preview) {
+      return null;
     }
-  };
+    return {
+      name: preview.manifest.name,
+      members: preview.member_count ?? 0,
+      icon: preview.manifest.name.slice(0, 1).toUpperCase(),
+      description: preview.manifest.description?.trim() || 'Signed xorein invite preview.',
+    };
+  }, [preview]);
 
-  const handleJoin = () => {
+  useEffect(() => {
+    const trimmed = inviteLink.trim();
+    if (!trimmed) {
+      setPreview(null);
+      setPreviewLoading(false);
+      setError('');
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setPreviewLoading(true);
+      try {
+        const nextPreview = await previewServerByInvite(runtimeSnapshot, trimmed);
+        if (cancelled) {
+          return;
+        }
+        setPreview(nextPreview);
+        setError('');
+      } catch (nextError) {
+        if (cancelled) {
+          return;
+        }
+        setPreview(null);
+        setError(nextError instanceof Error ? nextError.message : 'Unable to preview invite.');
+      } finally {
+        if (!cancelled) {
+          setPreviewLoading(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [inviteLink, runtimeSnapshot]);
+
+  const handleJoin = async () => {
     if (!inviteLink.trim()) return;
-    setLoading(true);
-    setTimeout(() => {
-      onJoin?.(inviteLink);
+    setJoining(true);
+    setError('');
+    try {
+      await onJoin(inviteLink.trim());
       onClose();
-    }, 600);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'Failed to join server.');
+    } finally {
+      setJoining(false);
+    }
   };
 
   return (
@@ -59,47 +104,50 @@ export const JoinServerModal: React.FC<JoinServerModalProps> = ({ onClose, onJoi
               <input
                 type="text"
                 value={inviteLink}
-                onChange={e => handlePaste(e.target.value)}
-                placeholder="harmolyn.gg/abc123 or invite code"
+                onChange={e => setInviteLink(e.target.value)}
+                placeholder="aether://join/server-id?invite=..."
                 className="w-full h-14 pl-11 pr-5 rounded-full bg-surface-dark border border-stroke-subtle text-text-primary text-body placeholder:text-text-disabled focus:border-stroke-primary focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           {/* Preview */}
-          {loading && !preview && (
+          {previewLoading && !preview && (
             <div className="flex items-center justify-center py-6">
               <Loader2 size={20} className="text-primary animate-spin" />
             </div>
           )}
 
-          {preview && (
+          {previewSummary && (
             <div className="glass-card rounded-r2 p-4 border border-stroke-primary mb-5 flex items-center gap-4 animate-in slide-in-from-bottom-2 duration-200">
               <div className="w-12 h-12 rounded-r2 bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl">
-                {preview.icon}
+                {previewSummary.icon}
               </div>
               <div className="flex-1">
-                <div className="text-body-strong text-text-primary">{preview.name}</div>
+                <div className="text-body-strong text-text-primary">{previewSummary.name}</div>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <div className="w-2 h-2 rounded-full bg-accent-success" />
-                  <span className="text-caption text-text-secondary">{preview.members.toLocaleString()} members</span>
+                  <span className="text-caption text-text-secondary">{previewSummary.members.toLocaleString()} members</span>
                 </div>
+                <div className="text-caption text-text-tertiary mt-1">{previewSummary.description}</div>
               </div>
               <Shield size={16} className="text-primary/40" />
             </div>
           )}
 
           {error && (
-            <div className="text-caption text-accent-danger mb-4 px-2">{error}</div>
+            <div className="mb-4 rounded-r2 border border-accent-danger/20 bg-accent-danger/10 px-3 py-2 text-caption text-accent-danger flex items-start gap-2" role="alert">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
           )}
 
           {/* Examples */}
           <div className="mb-6">
             <div className="micro-label text-text-disabled mb-2">INVITE FORMATS</div>
             <div className="space-y-1 text-caption text-text-tertiary font-mono">
-              <div>harmolyn.gg/hN7bQm3p</div>
-              <div>harmolyn.gg/cyber-devs</div>
-              <div>hN7bQm3p</div>
+              <div>aether://join/cyber-devs?invite=&lt;signed-payload&gt;</div>
+              <div>aether://join/private-lab?invite=&lt;signed-payload&gt;</div>
             </div>
           </div>
 
@@ -109,11 +157,11 @@ export const JoinServerModal: React.FC<JoinServerModalProps> = ({ onClose, onJoi
               Cancel
             </button>
             <button
-              onClick={handleJoin}
-              disabled={!inviteLink.trim() || loading}
+              onClick={() => void handleJoin()}
+              disabled={!inviteLink.trim() || previewLoading || joining || !preview}
               className="h-12 px-6 rounded-full bg-primary text-bg-0 font-bold text-body-strong flex items-center gap-2 hover:shadow-glow transition-all disabled:opacity-40"
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+              {joining ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
               Join Server
             </button>
           </div>

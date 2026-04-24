@@ -6,6 +6,7 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
     "noEmit": false,
     "outDir": ".generated/protocol-tests",
     "rootDir": ".",

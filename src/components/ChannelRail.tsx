@@ -1,17 +1,19 @@
 
 import React, { useState } from 'react';
-import { Server, User, UserStatus } from '@/types';
+import { ConnectionState, DirectMessageChannel, Server, User, UserStatus } from '@/types';
 import { ChevronDown, Hash, Volume2, Mic, Headphones, Settings, UserPlus, X, LogOut, Radio, PanelLeftClose, PanelLeftOpen, ArrowUpDown, Zap, FileText, Heart } from 'lucide-react';
-import { USERS, DIRECT_MESSAGES, CURRENT_USER } from '@/data';
 import { StatusPicker } from '@/components/StatusPicker';
 import { AccountSwitcher } from '@/components/AccountSwitcher';
-import { VoiceControlBar } from '@/components/voice/VoiceControlBar';
+import { VoiceControlBar, type VoiceControlState } from '@/components/voice/VoiceControlBar';
 import { VoiceTextChat } from '@/components/voice/VoiceTextChat';
 import { useFeature } from '@/hooks/useFeature';
 interface ChannelRailProps {
   server?: Server;
   activeChannelId: string;
   currentUser: User;
+  users: User[];
+  directMessages: DirectMessageChannel[];
+  connectionState: ConnectionState;
   connectedVoiceChannelId: string | null;
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -22,6 +24,12 @@ interface ChannelRailProps {
   onOpenDonations?: () => void;
   onOpenApplications?: () => void;
   onOpenActivities?: () => void;
+  onOpenVoiceSettings?: () => void;
+  voiceControlState?: VoiceControlState;
+  onToggleVoiceMute?: () => void;
+  onToggleVoiceDeafen?: () => void;
+  onToggleVoiceVideo?: () => void;
+  onToggleVoiceScreenShare?: () => void;
   isHome?: boolean;
 }
 
@@ -29,6 +37,9 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
   server, 
   activeChannelId, 
   currentUser, 
+  users,
+  directMessages,
+  connectionState,
   connectedVoiceChannelId,
   collapsed,
   onToggleCollapse,
@@ -39,8 +50,16 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
   onOpenDonations,
   onOpenApplications,
   onOpenActivities,
+  onOpenVoiceSettings,
+  voiceControlState,
+  onToggleVoiceMute,
+  onToggleVoiceDeafen,
+  onToggleVoiceVideo,
+  onToggleVoiceScreenShare,
   isHome 
 }) => {
+  const connectivityEnabled = connectionState.canUseConnectivityActions;
+  const voiceDisabledReason = voiceControlState?.canInteract ? undefined : voiceControlState?.statusDetail;
   
   return (
     <div 
@@ -65,8 +84,12 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
 
       {/* Header */}
       <div className="h-[52px] px-5 flex items-center justify-between border-b theme-border">
-        <div className="flex items-center gap-2 overflow-hidden">
+        <div className="flex items-center gap-2 overflow-hidden min-w-0">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${statusColorClass(connectionState.status)}`}></div>
+          <div className="min-w-0">
             <h2 className="font-bold theme-text truncate micro-label text-xs tracking-widest">{isHome ? 'System Hub' : server?.name}</h2>
+            <div className="text-[9px] theme-text-dim truncate tracking-[0.24em]">{connectionState.label}</div>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           {onOpenDonations && (
@@ -75,12 +98,12 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
             </button>
           )}
           {!isHome && onOpenApplications && (
-            <button onClick={onOpenApplications} className="theme-text-dim hover:text-accent-warning transition-colors" aria-label="Applications" title="Applications">
+            <button disabled={!connectivityEnabled} onClick={onOpenApplications} className="theme-text-dim hover:text-accent-warning transition-colors disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Applications" title={!connectivityEnabled ? connectionState.detail : 'Applications'}>
               <FileText size={14} />
             </button>
           )}
           {!isHome && onOpenServerSettings && (
-            <button onClick={onOpenServerSettings} className="theme-text-dim hover:text-primary transition-colors" aria-label="Server Settings">
+            <button disabled={!connectivityEnabled} onClick={onOpenServerSettings} className="theme-text-dim hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Server Settings" title={!connectivityEnabled ? connectionState.detail : 'Server Settings'}>
               <Settings size={14} />
             </button>
           )}
@@ -95,15 +118,17 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
             <section>
                 <div className="micro-label theme-text-dim mb-3 px-2">Direct Communications</div>
                 <div className="space-y-1.5">
-                    {DIRECT_MESSAGES.map(dm => {
-                        const user = USERS.find(u => u.id === dm.userId);
+                    {directMessages.map(dm => {
+                        const user = users.find(u => u.id === dm.userId);
                         if (!user) return null;
                         const active = activeChannelId === dm.id;
                         return (
                             <button 
                                 key={dm.id} 
+                                disabled={!connectivityEnabled}
                                 onClick={() => onSelectChannel(dm.id)}
-                                className={`w-full flex items-center gap-2.5 p-1.5 rounded-r2 border transition-all cursor-pointer btn-press ${active ? 'bg-primary/10 border-primary/20 text-primary shadow-[inset_0_0_10px_rgba(19,221,236,0.1)]' : 'bg-transparent border-transparent theme-text-secondary hover:bg-white/5 hover:theme-text'}`}>
+                                title={!connectivityEnabled ? connectionState.detail : user.username}
+                                className={`w-full flex items-center gap-2.5 p-1.5 rounded-r2 border transition-all cursor-pointer btn-press disabled:opacity-40 disabled:cursor-not-allowed ${active ? 'bg-primary/10 border-primary/20 text-primary shadow-[inset_0_0_10px_rgba(19,221,236,0.1)]' : 'bg-transparent border-transparent theme-text-secondary hover:bg-white/5 hover:theme-text'}`}>
                                 <div className="w-7 h-7 rounded-full overflow-hidden border theme-border">
                                     <img src={user.avatar} className="w-full h-full object-cover" alt={user.username} />
                                 </div>
@@ -131,11 +156,13 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
                             return (
                                 <div key={ch.id}>
                                     <button 
-                                        onClick={() => isVoice ? onJoinVoice(ch.id) : onSelectChannel(ch.id)}
-                                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-r2 border transition-all cursor-pointer group btn-press ${active ? 'bg-primary/10 border-primary/20 text-primary shadow-inner' : 'bg-transparent border-transparent theme-text-secondary hover:bg-white/5 hover:theme-text'} ${isConnected ? 'bg-accent-success/10 border-accent-success/20 text-accent-success' : ''}`}>
-                                        {isVoice ? <Volume2 size={14} /> : <Hash size={14} />}
-                                        <span className="text-xs font-medium tracking-tight flex-1 text-left">{ch.name}</span>
-                                        {ch.unreadCount && !active && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
+                                        disabled={!connectivityEnabled}
+                                         onClick={() => isVoice ? onJoinVoice(ch.id) : onSelectChannel(ch.id)}
+                                        title={!connectivityEnabled ? connectionState.detail : ch.name}
+                                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-r2 border transition-all cursor-pointer group btn-press disabled:opacity-40 disabled:cursor-not-allowed ${active ? 'bg-primary/10 border-primary/20 text-primary shadow-inner' : 'bg-transparent border-transparent theme-text-secondary hover:bg-white/5 hover:theme-text'} ${isConnected ? 'bg-accent-success/10 border-accent-success/20 text-accent-success' : ''}`}>
+                                         {isVoice ? <Volume2 size={14} /> : <Hash size={14} />}
+                                         <span className="text-xs font-medium tracking-tight flex-1 text-left">{ch.name}</span>
+                                         {ch.unreadCount && !active && <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>}
                                     </button>
                                     {isVoice && ch.activeUsers && ch.activeUsers.length > 0 && (
                                         <div className="ml-8 mt-1.5 space-y-1.5 pb-1.5">
@@ -163,14 +190,35 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
             channelName={
               server?.categories.flatMap(c => c.channels).find(ch => ch.id === connectedVoiceChannelId)?.name || 'Voice'
             }
+            state={voiceControlState ?? {
+              statusLabel: 'VOICE CONNECTED',
+              statusDetail: 'The local runtime is available.',
+              participantCount: 0,
+              muted: false,
+              deafened: false,
+              videoOn: false,
+              screenSharing: false,
+              activeActivityId: null,
+              canInteract: false,
+              pendingAction: null,
+              error: voiceDisabledReason ?? null,
+              sessionAvailable: false,
+              channelId: connectedVoiceChannelId,
+            }}
             onDisconnect={() => onJoinVoice('')}
+            onToggleMute={onToggleVoiceMute}
+            onToggleDeafen={onToggleVoiceDeafen}
+            onToggleVideo={onToggleVoiceVideo}
+            onToggleScreenShare={onToggleVoiceScreenShare}
             onOpenActivities={onOpenActivities}
+            onOpenVoiceSettings={onOpenVoiceSettings}
           />
           {useFeature('voiceTextChat') && (
             <VoiceTextChat
               channelName={
                 server?.categories.flatMap(c => c.channels).find(ch => ch.id === connectedVoiceChannelId)?.name || 'voice'
               }
+              disabledReason={voiceDisabledReason}
             />
           )}
         </>
@@ -185,17 +233,48 @@ export const ChannelRail: React.FC<ChannelRailProps> = ({
       ) : null}
 
       {/* User Footer */}
-      <UserFooter currentUser={currentUser} onOpenSettings={onOpenSettings} />
+      <UserFooter
+        currentUser={currentUser}
+        users={users}
+        connectionState={connectionState}
+        onOpenSettings={onOpenSettings}
+        voiceControlState={voiceControlState}
+        onToggleVoiceMute={onToggleVoiceMute}
+        onToggleVoiceDeafen={onToggleVoiceDeafen}
+      />
     </div>
   );
 };
 
-const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = ({ currentUser, onOpenSettings }) => {
+const UserFooter: React.FC<{
+  currentUser: User;
+  users: User[];
+  connectionState: ConnectionState;
+  onOpenSettings: () => void;
+  voiceControlState?: VoiceControlState;
+  onToggleVoiceMute?: () => void;
+  onToggleVoiceDeafen?: () => void;
+}> = ({ currentUser, users, connectionState, onOpenSettings, voiceControlState, onToggleVoiceMute, onToggleVoiceDeafen }) => {
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [userStatus, setUserStatus] = useState<UserStatus>(currentUser.status);
   const [customStatus, setCustomStatus] = useState('');
   const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const hasAccountSwitching = useFeature('accountSwitching');
+  const connectivityEnabled = connectionState.canUseConnectivityActions;
+  const voiceControlsAvailable = Boolean(onToggleVoiceMute && onToggleVoiceDeafen);
+  const voiceActionTitle = !voiceControlState?.channelId
+    ? 'Join a voice channel to use voice controls.'
+    : voiceControlState.pendingAction
+      ? `Voice ${voiceControlState.pendingAction} is syncing.`
+      : !voiceControlsAvailable
+        ? 'Voice controls are unavailable in this shell.'
+        : voiceControlState.canInteract
+          ? undefined
+          : voiceControlState.statusDetail;
+  const canUseVoiceFooterControls = Boolean(voiceControlState?.channelId)
+    && !voiceControlState?.pendingAction
+    && connectivityEnabled
+    && voiceControlsAvailable;
 
   const statusColors: Record<UserStatus, string> = {
     online: 'bg-accent-success shadow-[0_0_5px_#05FFA1]',
@@ -206,7 +285,7 @@ const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = 
 
   const mockAccounts = [
     { user: currentUser, active: true },
-    { user: { ...USERS[1], id: 'alt1' }, active: false },
+    { user: { ...(users[1] ?? currentUser), id: 'alt1' }, active: false },
   ];
 
   return (
@@ -245,10 +324,35 @@ const UserFooter: React.FC<{ currentUser: User; onOpenSettings: () => void }> = 
         {hasAccountSwitching && (
           <button onClick={() => setShowAccountSwitcher(!showAccountSwitcher)} aria-label="Switch Account" className="p-1 text-white/40 hover:text-primary transition-colors"><ArrowUpDown size={14} /></button>
         )}
-        <button aria-label="Mute Microphone" className="p-1 text-white/40 hover:text-primary transition-colors btn-press"><Mic size={14} /></button>
-        <button aria-label="Deafen Audio" className="p-1 text-white/40 hover:text-primary transition-colors btn-press"><Headphones size={14} /></button>
+        <button
+          disabled={!canUseVoiceFooterControls}
+          onClick={onToggleVoiceMute}
+          title={voiceActionTitle ?? (voiceControlState?.muted ? 'Unmute Microphone' : 'Mute Microphone')}
+          aria-label={voiceControlState?.muted ? 'Unmute Microphone' : 'Mute Microphone'}
+          className={`p-1 transition-colors btn-press disabled:opacity-40 disabled:cursor-not-allowed ${voiceControlState?.muted ? 'text-accent-danger hover:text-accent-danger' : 'text-white/40 hover:text-primary'}`}
+        ><Mic size={14} /></button>
+        <button
+          disabled={!canUseVoiceFooterControls}
+          onClick={onToggleVoiceDeafen}
+          title={voiceActionTitle ?? (voiceControlState?.deafened ? 'Undeafen Audio' : 'Deafen Audio')}
+          aria-label={voiceControlState?.deafened ? 'Undeafen Audio' : 'Deafen Audio'}
+          className={`p-1 transition-colors btn-press disabled:opacity-40 disabled:cursor-not-allowed ${voiceControlState?.deafened ? 'text-accent-danger hover:text-accent-danger' : 'text-white/40 hover:text-primary'}`}
+        ><Headphones size={14} /></button>
         <button onClick={onOpenSettings} aria-label="Open Settings" className="p-1 text-white/40 hover:text-primary transition-colors btn-press"><Settings size={14} /></button>
       </div>
     </div>
   );
 };
+
+function statusColorClass(status: ConnectionState['status']): string {
+  switch (status) {
+    case 'connected':
+      return 'bg-accent-success shadow-[0_0_8px_rgba(5,255,161,0.75)]';
+    case 'reconnecting':
+      return 'bg-accent-warning shadow-[0_0_8px_rgba(255,176,32,0.75)]';
+    case 'disconnected':
+    case 'no-peer':
+    case 'no-relay':
+      return 'bg-accent-danger shadow-[0_0_8px_rgba(255,42,109,0.75)]';
+  }
+}

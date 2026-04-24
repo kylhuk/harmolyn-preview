@@ -1,4 +1,4 @@
-import { FEATURES, type FeatureKey } from '@/config/featureFlags';
+import { resolveFeatureFlag, type FeatureKey } from '@/config/featureFlags';
 
 /**
  * Returns whether a given feature flag is enabled.
@@ -9,5 +9,5 @@ import { FEATURES, type FeatureKey } from '@/config/featureFlags';
  * if (hasThreads) { ... }
  */
 export function useFeature(feature: FeatureKey): boolean {
-  return FEATURES[feature] ?? false;
+  return resolveFeatureFlag(feature);
 }

@@ -9,6 +9,7 @@ export class DeeplinkValidationError extends Error {
 
 export interface DeepLink {
   serverId: string;
+  invite: string | null;
 }
 
 export function parseJoinDeepLink(raw: string): DeepLink {
@@ -32,8 +33,8 @@ export function parseJoinDeepLink(raw: string): DeepLink {
   if (parsed.username || parsed.password) {
     throw new DeeplinkValidationError("userinfo is not allowed");
   }
-  if (parsed.search || parsed.hash) {
-    throw new DeeplinkValidationError("query parameters and fragments are not allowed");
+  if (parsed.hash) {
+    throw new DeeplinkValidationError("fragments are not allowed");
   }
 
   const serverId = parsed.pathname.replace(/^\/+|\/+$/g, "");
@@ -44,5 +45,13 @@ export function parseJoinDeepLink(raw: string): DeepLink {
     throw new DeeplinkValidationError("server identifier invalid (alphanumeric/_/- only, 3-64 chars)");
   }
 
-  return { serverId };
+  const invite = parsed.searchParams.get("invite");
+  if (parsed.search) {
+    const entries = [...parsed.searchParams.entries()];
+    if (entries.length !== 1 || entries[0]?.[0] !== "invite" || !invite) {
+      throw new DeeplinkValidationError("deeplink requires only a non-empty invite query parameter");
+    }
+  }
+
+  return { serverId, invite: invite?.trim() || null };
 }

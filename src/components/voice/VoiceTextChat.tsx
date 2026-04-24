@@ -18,9 +18,10 @@ const MOCK_VOICE_MESSAGES: VoiceTextMessage[] = [
 
 interface VoiceTextChatProps {
   channelName: string;
+  disabledReason?: string;
 }
 
-export const VoiceTextChat: React.FC<VoiceTextChatProps> = ({ channelName }) => {
+export const VoiceTextChat: React.FC<VoiceTextChatProps> = ({ channelName, disabledReason }) => {
   const [messages, setMessages] = useState<VoiceTextMessage[]>(MOCK_VOICE_MESSAGES);
   const [input, setInput] = useState('');
   const [collapsed, setCollapsed] = useState(false);
@@ -60,6 +61,12 @@ export const VoiceTextChat: React.FC<VoiceTextChatProps> = ({ channelName }) => 
 
       {!collapsed && (
         <>
+          {disabledReason && (
+            <div className="mx-3 mt-2 rounded-r1 border border-accent-warning/20 bg-accent-warning/10 px-3 py-2 text-[9px] font-mono text-accent-warning">
+              {disabledReason}
+            </div>
+          )}
+
           {/* Messages */}
           <div ref={scrollRef} className="max-h-[200px] overflow-y-auto px-3 py-2 space-y-2 no-scrollbar">
             {messages.map(msg => (
@@ -79,22 +86,23 @@ export const VoiceTextChat: React.FC<VoiceTextChatProps> = ({ channelName }) => 
           {/* Input */}
           <div className="px-3 pb-2.5 pt-1">
             <div className="flex items-center gap-2 bg-surface-dark rounded-full border border-white/5 px-3 py-1.5">
-              <input
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
-                placeholder="Message voice chat..."
-                className="flex-1 bg-transparent text-[11px] text-white placeholder-white/25 focus:outline-none"
-              />
-              <button
-                onClick={handleSend}
-                disabled={!input.trim()}
-                className="p-1 text-primary/50 hover:text-primary disabled:text-white/15 transition-colors"
-                aria-label="Send"
-              >
-                <Send size={12} />
-              </button>
+                <input
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                  placeholder={disabledReason ? 'Join voice to chat' : 'Message voice chat...'}
+                  disabled={Boolean(disabledReason)}
+                  className="flex-1 bg-transparent text-[11px] text-white placeholder-white/25 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || Boolean(disabledReason)}
+                  className="p-1 text-primary/50 hover:text-primary disabled:text-white/15 transition-colors"
+                  aria-label="Send"
+                >
+                  <Send size={12} />
+                </button>
             </div>
           </div>
         </>

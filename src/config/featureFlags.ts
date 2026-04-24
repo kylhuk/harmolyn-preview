@@ -130,3 +130,37 @@ export const FEATURES = {
 
 /** Union type of all feature flag keys */
 export type FeatureKey = keyof typeof FEATURES;
+
+export const FEATURE_OVERRIDES_STORAGE_KEY = 'harmolyn:feature-overrides';
+
+export type FeatureOverrides = Partial<Record<FeatureKey, boolean>>;
+
+export function readFeatureOverrides(): FeatureOverrides {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  const raw = window.localStorage.getItem(FEATURE_OVERRIDES_STORAGE_KEY);
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const overrides: FeatureOverrides = {};
+
+    for (const [key, value] of Object.entries(parsed)) {
+      if (key in FEATURES && typeof value === 'boolean') {
+        overrides[key as FeatureKey] = value;
+      }
+    }
+
+    return overrides;
+  } catch {
+    return {};
+  }
+}
+
+export function resolveFeatureFlag(feature: FeatureKey, overrides: FeatureOverrides = readFeatureOverrides()): boolean {
+  return overrides[feature] ?? FEATURES[feature];
+}

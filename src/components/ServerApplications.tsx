@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { X, FileText, Plus, Trash2, GripVertical, CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp, Users, Send } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, FileText, Plus, Trash2, GripVertical, CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp, Users } from 'lucide-react';
 
 interface ApplicationQuestion {
   id: string;
@@ -35,6 +35,11 @@ const MOCK_APPLICATIONS: Application[] = [
 
 type Tab = 'review' | 'form';
 
+interface FeedbackState {
+  tone: 'error' | 'info' | 'success';
+  message: string;
+}
+
 interface ServerApplicationsProps {
   onClose: () => void;
 }
@@ -45,21 +50,44 @@ export const ServerApplications: React.FC<ServerApplicationsProps> = ({ onClose 
   const [questions, setQuestions] = useState(DEFAULT_QUESTIONS);
   const [expandedApp, setExpandedApp] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
 
   const filtered = filter === 'all' ? applications : applications.filter(a => a.status === filter);
   const pendingCount = applications.filter(a => a.status === 'pending').length;
 
+  useEffect(() => {
+    if (!feedback) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setFeedback(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
+
   const handleAction = (appId: string, action: 'approved' | 'rejected') => {
     setApplications(prev => prev.map(a => a.id === appId ? { ...a, status: action } : a));
+    setFeedback({
+      tone: action === 'approved' ? 'success' : 'info',
+      message: action === 'approved'
+        ? 'Application approved locally in this preview.'
+        : 'Application rejected locally in this preview.',
+    });
   };
 
   const addQuestion = () => {
-    const id = `q${questions.length + 1}`;
-    setQuestions(prev => [...prev, { id, question: '', type: 'text', required: false }]);
+    const id = `q-${Date.now()}`;
+    setQuestions(prev => [...prev, { id, question: `Custom question ${prev.length + 1}`, type: 'text', required: false }]);
+    setFeedback({ tone: 'success', message: 'Added a local preview application question.' });
   };
 
   const removeQuestion = (id: string) => {
+    if (questions.length === 1) {
+      setFeedback({ tone: 'info', message: 'At least one application question is required in this preview.' });
+      return;
+    }
+
     setQuestions(prev => prev.filter(q => q.id !== id));
+    setFeedback({ tone: 'info', message: 'Removed an application question from the local preview form.' });
   };
 
   const statusConfig = {
@@ -87,6 +115,12 @@ export const ServerApplications: React.FC<ServerApplicationsProps> = ({ onClose 
           </button>
         </div>
       </div>
+
+      {feedback && (
+        <div className={`mx-6 mt-4 rounded-r2 border px-4 py-3 text-xs ${feedback.tone === 'error' ? 'border-accent-danger/30 bg-accent-danger/10 text-accent-danger' : feedback.tone === 'success' ? 'border-accent-success/30 bg-accent-success/10 text-accent-success' : 'border-primary/30 bg-primary/10 text-primary'}`}>
+          {feedback.message}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="px-6 py-3 border-b border-white/5 flex gap-2 flex-shrink-0">
@@ -197,12 +231,12 @@ export const ServerApplications: React.FC<ServerApplicationsProps> = ({ onClose 
                     <div className="flex items-start gap-3">
                       <GripVertical size={16} className="text-white/10 mt-1 cursor-grab" />
                       <div className="flex-1 space-y-2">
-                        <input
-                          value={q.question}
-                          onChange={e => setQuestions(prev => prev.map(qu => qu.id === q.id ? { ...qu, question: e.target.value } : qu))}
-                          placeholder={`Question ${idx + 1}...`}
-                          className="w-full bg-transparent text-sm text-white font-bold placeholder:text-white/20 focus:outline-none"
-                        />
+                          <input
+                            value={q.question}
+                            onChange={e => setQuestions(prev => prev.map(qu => qu.id === q.id ? { ...qu, question: e.target.value } : qu))}
+                            placeholder={`Question ${idx + 1}...`}
+                            className="w-full bg-transparent text-sm text-white font-bold placeholder:text-white/20 focus:outline-none"
+                          />
                         <div className="flex items-center gap-2">
                           <select
                             value={q.type}

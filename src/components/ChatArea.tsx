@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { Channel, Message, User, MessageLayout } from '@/types';
 import { generateTheme } from '@/utils/themeGenerator';
 import { renderMarkdown } from '@/utils/markdown';
@@ -15,8 +15,15 @@ import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal';
 import { SearchPanel } from '@/components/SearchPanel';
 import { InboxPanel } from '@/components/InboxPanel';
 import { MentionAutocomplete } from '@/components/MentionAutocomplete';
+import { NotificationToast, useToasts } from '@/components/NotificationToast';
 import { useFeature } from '@/hooks/useFeature';
 import { useContextMenu } from '@/components/GlobalContextMenu';
+import { readShellRuntimeData } from '@/data';
+import {
+  readBrowserChatActionSupport,
+  readPersistedChatScopeState,
+  writePersistedChatScopeState,
+} from '@/protocol/client';
 import { Hash, Bell, Pin, Users, Search, MoreHorizontal, MessageSquare, AtSign, Smile, Sticker, PlusCircle, X, Send, LayoutTemplate, Menu, Trash2, MicOff, Image, FileText, Reply, CornerUpRight, Pencil, Check, PanelRightClose, Forward, BarChart3, Link2, ArrowDown, MessageCircle, Inbox } from 'lucide-react';
 import { DonorBadge } from '@/components/DonorBadge';
 
@@ -100,7 +107,7 @@ const UsernameDisplay = ({ user, compact = false }: { user: User, compact?: bool
 };
 
 // User popup sub-component for member details
-const UserPopup = ({ user, children }: { user: User, children?: React.ReactNode }) => {
+const UserPopup = ({ user, children, onDirectLink, onMoreOptions }: { user: User, children?: React.ReactNode, onDirectLink?: () => void, onMoreOptions?: () => void }) => {
     const [open, setOpen] = useState(false);
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleEnter = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setOpen(true); };
@@ -140,8 +147,8 @@ const UserPopup = ({ user, children }: { user: User, children?: React.ReactNode 
                             <p className="text-[10px] text-white/80 italic leading-relaxed">{user.bio}</p>
                         </div>
                         <div className="flex gap-1.5">
-                            <button className="flex-1 bg-primary text-bg-0 font-bold py-2 rounded-full micro-label tracking-tight hover:shadow-glow transition-all text-[10px]">Direct Link</button>
-                            <button className="px-2.5 bg-white/5 text-white/60 rounded-full hover:bg-white/10 transition-colors border border-white/5" aria-label="More options"><MoreHorizontal size={16} /></button>
+                            <button onClick={onDirectLink} className="flex-1 bg-primary text-bg-0 font-bold py-2 rounded-full micro-label tracking-tight hover:shadow-glow transition-all text-[10px]">Direct Link</button>
+                            <button onClick={onMoreOptions} className="px-2.5 bg-white/5 text-white/60 rounded-full hover:bg-white/10 transition-colors border border-white/5" aria-label="More options"><MoreHorizontal size={16} /></button>
                         </div>
                     </div>
                 </div>
@@ -163,6 +170,42 @@ interface ChatAreaProps {
   bgSeed: string;
   setBgSeed: (seed: string) => void;
 }
+
+interface ForwardDestination {
+  id: string;
+  label: string;
+  sublabel: string;
+  type: 'channel' | 'dm';
+}
+
+interface InboxItem {
+  id: string;
+  type: 'mention' | 'reply';
+  messageId: string;
+  channelName: string;
+  serverName: string;
+  timestamp: string;
+  read: boolean;
+}
+
+interface ComposerFeedback {
+  tone: 'info' | 'success' | 'error';
+  text: string;
+}
+
+const MESSAGE_ID_PREFIX = 'local-msg-';
+
+const formatTimestamp = (value = Date.now()) => new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+}).format(new Date(value));
+
+const buildMessageElementId = (messageId: string) => `chat-message-${messageId}`;
+
+const formatAttachmentLabel = (file: File) => {
+  const sizeKb = Math.max(1, Math.round(file.size / 1024));
+  return `${file.name} • ${sizeKb} KB`;
+};
 
 export const ChatArea: React.FC<ChatAreaProps> = ({ 
   channel, 
@@ -189,12 +232,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [composerFeedback, setComposerFeedback] = useState<ComposerFeedback | null>(null);
 
   const [messagesState, setMessagesState] = useState<Message[]>(messages);
   const [mutedUsers, setMutedUsers] = useState<Set<string>>(new Set());
   const [forwardingContent, setForwardingContent] = useState<string | null>(null);
   const [showPollCreator, setShowPollCreator] = useState(false);
   const [polls, setPolls] = useState<Map<string, { question: string; options: { text: string; votes: number }[]; totalVotes: number }>>(new Map());
+  const [threadRepliesByParent, setThreadRepliesByParent] = useState<Record<string, Message[]>>({});
+  const [localNickname, setLocalNickname] = useState('');
+  const [inboxReadIds, setInboxReadIds] = useState<Set<string>>(new Set());
+  const [deletedMessageIds, setDeletedMessageIds] = useState<Set<string>>(new Set());
 
   const hasForwarding = useFeature('messageForwarding');
   const hasPolls = useFeature('polls');
@@ -218,10 +266,80 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const UNREAD_AFTER_INDEX = 8;
 
   const { showMenu } = useContextMenu();
+  const { toasts, addToast, dismissToast } = useToasts();
+  const chatSupport = useMemo(() => readBrowserChatActionSupport(), [channel?.id, messages.length]);
+
+  const persistScopeState = useCallback((next: {
+    messages?: Message[];
+    mutedUserIds?: Set<string>;
+    threads?: Record<string, Message[]>;
+    nickname?: string;
+    inboxReadIds?: Set<string>;
+    deletedMessageIds?: Set<string>;
+  }) => {
+    if (!channel?.id) {
+      return;
+    }
+
+    writePersistedChatScopeState(channel.id, {
+      version: 1,
+      nickname: next.nickname ?? localNickname,
+      mutedUserIds: [...(next.mutedUserIds ?? mutedUsers)],
+      inboxReadIds: [...(next.inboxReadIds ?? inboxReadIds)],
+      deletedMessageIds: [...(next.deletedMessageIds ?? deletedMessageIds)],
+      messages: next.messages ?? messagesState,
+      threads: next.threads ?? threadRepliesByParent,
+    });
+  }, [channel?.id, deletedMessageIds, inboxReadIds, localNickname, messagesState, mutedUsers, threadRepliesByParent]);
+
+  const showFeedback = useCallback((tone: ComposerFeedback['tone'], text: string, toastType: 'message' | 'system' = 'system') => {
+    setComposerFeedback({ tone, text });
+    addToast({
+      type: toastType,
+      title: tone === 'error' ? 'CHAT ACTION BLOCKED' : 'CHAT ACTION',
+      body: text,
+    });
+  }, [addToast]);
+
+  const mergePersistedMessages = useCallback((incomingMessages: Message[], persistedMessages: Message[], deletedIds: Set<string>) => {
+    if (persistedMessages.length === 0) {
+      return incomingMessages.filter((message) => !deletedIds.has(message.id));
+    }
+
+    const merged = [...persistedMessages];
+    const seen = new Set(merged.map((message) => message.id));
+    for (const incomingMessage of incomingMessages) {
+      if (!seen.has(incomingMessage.id) && !deletedIds.has(incomingMessage.id)) {
+        merged.push(incomingMessage);
+      }
+    }
+    return merged;
+  }, []);
 
   useEffect(() => {
-    setMessagesState(messages);
-  }, [messages]);
+    if (!channel?.id) {
+      setMessagesState(messages);
+      setMutedUsers(new Set());
+      setThreadRepliesByParent({});
+      setLocalNickname('');
+      setInboxReadIds(new Set());
+      setDeletedMessageIds(new Set());
+      return;
+    }
+
+    const persisted = readPersistedChatScopeState(channel.id);
+    const persistedDeletedIds = new Set(persisted.deletedMessageIds);
+    setMessagesState(mergePersistedMessages(messages, persisted.messages, persistedDeletedIds));
+    setMutedUsers(new Set(persisted.mutedUserIds));
+    setThreadRepliesByParent(persisted.threads);
+    setLocalNickname(persisted.nickname);
+    setInboxReadIds(new Set(persisted.inboxReadIds));
+    setDeletedMessageIds(persistedDeletedIds);
+    setComposerFeedback({
+      tone: chatSupport.mode === 'offline' ? 'error' : 'info',
+      text: chatSupport.detail,
+    });
+  }, [channel?.id, chatSupport.detail, chatSupport.mode, mergePersistedMessages, messages]);
 
   const handleContextMenu = (e: React.MouseEvent, msgId: string) => {
     e.preventDefault();
@@ -236,7 +354,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     const mainItems = [
       { label: 'Reply', icon: <MessageSquare size={13} />, onClick: () => setReplyingTo(msg) },
       { label: msg.pinned ? 'Unpin Message' : 'Pin Message', icon: <Pin size={13} />, onClick: () => togglePin(msg.id) },
-      { label: 'Add Reaction', icon: <Smile size={13} />, onClick: () => {} },
+      { label: 'Add Reaction', icon: <Smile size={13} />, onClick: () => setReactionMenuMsgId(msg.id) },
     ];
     if (isMe) mainItems.push({ label: 'Edit Message', icon: <Pencil size={13} />, onClick: () => startEdit(msg) });
     if (hasForwarding) mainItems.push({ label: 'Forward Message', icon: <Forward size={13} />, onClick: () => setForwardingContent(msg.content) });
@@ -278,40 +396,93 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     setShowSlashCommands(false);
   };
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
-    
-    const baseMsg: Partial<Message> = {
-      id: `m${Date.now()}`,
-      userId: 'me',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      ...(replyingTo ? { replyToId: replyingTo.id } : {}),
-    };
+  const createLocalMessage = useCallback((content: string, overrides: Partial<Message> = {}): Message => ({
+    id: `${MESSAGE_ID_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    userId: 'me',
+    content,
+    timestamp: formatTimestamp(),
+    ...(replyingTo ? { replyToId: replyingTo.id } : {}),
+    ...overrides,
+  }), [replyingTo]);
 
-    if (inputValue.startsWith('/me ')) {
-        const action = inputValue.substring(4);
-        setMessagesState(prev => [...prev, { ...baseMsg, content: `_${action}_` } as Message]);
-    } else if (inputValue.startsWith('/shrug')) {
-        setMessagesState(prev => [...prev, { ...baseMsg, content: `${inputValue.substring(6)} ¯\\_(ツ)_/¯` } as Message]);
-    } else {
-        setMessagesState(prev => [...prev, { ...baseMsg, content: inputValue } as Message]);
+  const handleSendMessage = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+
+    if (trimmed.startsWith('/')) {
+      const [command, ...rest] = trimmed.slice(1).split(/\s+/);
+      const payload = rest.join(' ').trim();
+      if (command === 'nick') {
+        if (!payload) {
+          showFeedback('error', 'Provide a nickname after /nick, for example `/nick Cipher`.', 'system');
+          return;
+        }
+        setLocalNickname(payload);
+        persistScopeState({ nickname: payload });
+        setInputValue('');
+        showFeedback('success', `Using ${payload} as your local chat alias in this scope.`, 'system');
+        return;
+      }
+
+      if (command === 'clear') {
+        const nextMessages = messages.filter((message) => !message.id.startsWith(MESSAGE_ID_PREFIX));
+        setMessagesState(nextMessages);
+        setInputValue('');
+        setReplyingTo(null);
+        persistScopeState({ messages: nextMessages });
+        showFeedback('success', 'Cleared locally composed preview messages for this chat.', 'system');
+        return;
+      }
+
+      if (command === 'me') {
+        const nextMessages = [...messagesState, createLocalMessage(payload ? `_${payload}_` : '_shrugs in silence_')];
+        setMessagesState(nextMessages);
+        setInputValue('');
+        setReplyingTo(null);
+        persistScopeState({ messages: nextMessages });
+        showFeedback('info', chatSupport.detail, 'message');
+        return;
+      }
+
+      if (command === 'shrug') {
+        const nextMessages = [...messagesState, createLocalMessage(`${payload} ¯\\_(ツ)_/¯`.trim())];
+        setMessagesState(nextMessages);
+        setInputValue('');
+        setReplyingTo(null);
+        persistScopeState({ messages: nextMessages });
+        showFeedback('info', chatSupport.detail, 'message');
+        return;
+      }
+
+      showFeedback('error', `/${command} is not available in this preview yet.`, 'system');
+      return;
     }
+
+    const nextMessages = [...messagesState, createLocalMessage(inputValue)];
+    setMessagesState(nextMessages);
     setInputValue('');
     setReplyingTo(null);
+    persistScopeState({ messages: nextMessages });
+    showFeedback('info', chatSupport.detail, 'message');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-        const newMessage: Message = {
-            id: `m${Date.now()}`,
-            userId: 'me',
-            content: `Uploaded file: ${file.name}`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            attachments: ['file']
-        };
-        setMessagesState(prev => [...prev, newMessage]);
+    e.currentTarget.value = '';
+    if (!file) {
+      return;
     }
+    if (!chatSupport.canAttemptAttachments) {
+      showFeedback('error', 'Attachments are disabled while the local xorein runtime is offline.', 'system');
+      return;
+    }
+
+    const nextMessages = [...messagesState, createLocalMessage(`📎 **Attachment (local preview):** ${formatAttachmentLabel(file)}`, {
+      attachments: [formatAttachmentLabel(file)],
+    })];
+    setMessagesState(nextMessages);
+    persistScopeState({ messages: nextMessages });
+    showFeedback('info', 'Attachment stored as a local preview placeholder for this browser session.', 'message');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -323,11 +494,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const toggleMuteUser = (userId: string) => {
     setMutedUsers(prev => {
       const next = new Set(prev);
-      if (next.has(userId)) {
-        next.delete(userId);
-      } else {
+      const muting = !next.has(userId);
+      if (muting) {
         next.add(userId);
+      } else {
+        next.delete(userId);
       }
+      persistScopeState({ mutedUserIds: next });
       return next;
     });
   };
@@ -337,24 +510,41 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       const msg = messagesState.find(m => m.id === msgId);
       if (msg) setDeleteTarget(msg);
     } else {
-      setMessagesState(prev => prev.filter(m => m.id !== msgId));
+      const nextMessages = messagesState.filter(m => m.id !== msgId);
+      const nextDeletedIds = new Set(deletedMessageIds);
+      nextDeletedIds.add(msgId);
+      setMessagesState(nextMessages);
+      setDeletedMessageIds(nextDeletedIds);
+      persistScopeState({ messages: nextMessages, deletedMessageIds: nextDeletedIds });
     }
   };
 
   const confirmDelete = () => {
     if (deleteTarget) {
-      setMessagesState(prev => prev.filter(m => m.id !== deleteTarget.id));
+      const nextMessages = messagesState.filter(m => m.id !== deleteTarget.id);
+      const nextDeletedIds = new Set(deletedMessageIds);
+      nextDeletedIds.add(deleteTarget.id);
+      setMessagesState(nextMessages);
+      setDeletedMessageIds(nextDeletedIds);
+      persistScopeState({ messages: nextMessages, deletedMessageIds: nextDeletedIds });
       setDeleteTarget(null);
     }
   };
 
-  const copyMessageLink = (msgId: string) => {
-    const link = `${window.location.origin}/#/messages/${msgId}`;
-    navigator.clipboard.writeText(link).catch(() => {});
+  const copyMessageLink = async (msgId: string) => {
+    const link = `${window.location.origin}/#/messages/${channel?.id || 'scope'}/${msgId}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      showFeedback('success', 'Copied a stable local message link to the clipboard.', 'message');
+    } catch {
+      showFeedback('error', 'Unable to write the message link to the clipboard in this browser.', 'system');
+    }
   };
 
   const togglePin = (msgId: string) => {
-    setMessagesState(prev => prev.map(m => m.id === msgId ? { ...m, pinned: !m.pinned } : m));
+    const nextMessages = messagesState.map(m => m.id === msgId ? { ...m, pinned: !m.pinned } : m);
+    setMessagesState(nextMessages);
+    persistScopeState({ messages: nextMessages });
   };
 
   const startEdit = (msg: Message) => {
@@ -364,11 +554,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   const saveEdit = () => {
     if (!editingMsgId || !editValue.trim()) return;
-    setMessagesState(prev => prev.map(m => 
+    const nextMessages = messagesState.map(m => 
       m.id === editingMsgId 
-        ? { ...m, content: editValue, editedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) } 
+        ? { ...m, content: editValue, editedAt: formatTimestamp() } 
         : m
-    ));
+    );
+    setMessagesState(nextMessages);
+    persistScopeState({ messages: nextMessages });
     setEditingMsgId(null);
     setEditValue('');
   };
@@ -398,7 +590,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   const getUser = (id: string): User => {
     const found = users.find(u => u.id === id);
-    if (found) return found;
+    if (found) {
+      if (id === 'me' && localNickname.trim()) {
+        return { ...found, username: localNickname.trim() };
+      }
+      return found;
+    }
     return (users[0] || { 
       id: 'unknown', 
       username: 'Unknown User', 
@@ -408,7 +605,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   const handleReactionToggle = (msgId: string, emoji: string) => {
-    setMessagesState(prev => prev.map(msg => {
+    const nextMessages = messagesState.map(msg => {
         if (msg.id !== msgId) return msg;
         
         const reactions = msg.reactions || [];
@@ -431,7 +628,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         }
         
         return { ...msg, reactions: newReactions };
-    }));
+    });
+    setMessagesState(nextMessages);
+    persistScopeState({ messages: nextMessages });
     setReactionMenuMsgId(null);
   };
 
@@ -449,6 +648,103 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       )
     );
   };
+
+  const liveShellData = useMemo(() => readShellRuntimeData(), [channel?.id, users.length, messages.length]);
+
+  const forwardDestinations = useMemo<ForwardDestination[]>(() => {
+    const dmDestinations = liveShellData.directMessages.map((dm) => {
+      const destinationUser = liveShellData.users.find((user) => user.id === dm.userId);
+      return {
+        id: dm.id,
+        label: destinationUser?.username || dm.id,
+        sublabel: 'Direct Message',
+        type: 'dm' as const,
+      };
+    });
+
+    const channelDestinations = liveShellData.servers.flatMap((server) =>
+      server.categories.flatMap((category) =>
+        category.channels
+          .filter((entry) => entry.type === 'text')
+          .map((entry) => ({
+            id: entry.id,
+            label: entry.name,
+            sublabel: server.name,
+            type: 'channel' as const,
+          })),
+      ),
+    );
+
+    return [...dmDestinations, ...channelDestinations]
+      .filter((destination, index, values) => values.findIndex((candidate) => candidate.id === destination.id) === index)
+      .sort((left, right) => left.label.localeCompare(right.label));
+  }, [liveShellData.directMessages, liveShellData.servers, liveShellData.users]);
+
+  const unreadInboxItems = useMemo(() => {
+    const selfName = getUser('me').username.toLowerCase();
+    return messagesState.reduce<InboxItem[]>((items, message) => {
+      if (message.userId === 'me') {
+        return items;
+      }
+
+      const isReply = Boolean(message.replyToId && messagesState.some((candidate) => candidate.id === message.replyToId && candidate.userId === 'me'));
+      const isMention = message.content.toLowerCase().includes(`@${selfName}`);
+      if (!isReply && !isMention) {
+        return items;
+      }
+
+      const id = `${isReply ? 'reply' : 'mention'}:${message.id}`;
+      items.push({
+        id,
+        type: isReply ? 'reply' : 'mention',
+        messageId: message.id,
+        channelName: channel?.name || 'current-chat',
+        serverName: isDM ? 'Direct Messages' : 'Current Server',
+        timestamp: message.timestamp,
+        read: inboxReadIds.has(id),
+      });
+      return items;
+    }, []).filter((item) => !item.read);
+  }, [channel?.name, inboxReadIds, isDM, messagesState]);
+
+  const jumpToMessage = useCallback((messageId: string) => {
+    const element = document.getElementById(buildMessageElementId(messageId));
+    if (!element) {
+      showFeedback('error', 'That message is not available in the current chat scope.', 'system');
+      return;
+    }
+
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setShowInbox(false);
+  }, [showFeedback]);
+
+  const handleForwardMessage = useCallback((destinations: ForwardDestination[], note: string) => {
+    const body = forwardingContent ?? '';
+    const localForCurrentScope: Message[] = [];
+    for (const destination of destinations) {
+      const persisted = readPersistedChatScopeState(destination.id);
+      const forwardedMessage: Message = {
+        id: `${MESSAGE_ID_PREFIX}${Date.now()}-${destination.id}`,
+        userId: 'me',
+        timestamp: formatTimestamp(),
+        content: `${note.trim() ? `${note.trim()}\n\n` : ''}↪ **Forwarded message${channel ? ` from #${channel.name}` : ''}:** ${body}`,
+      };
+      if (destination.id === channel?.id) {
+        localForCurrentScope.push(forwardedMessage);
+      }
+      writePersistedChatScopeState(destination.id, {
+        ...persisted,
+        messages: [...persisted.messages, forwardedMessage],
+      });
+    }
+    if (localForCurrentScope.length > 0) {
+      const nextMessages = [...messagesState, ...localForCurrentScope];
+      setMessagesState(nextMessages);
+      persistScopeState({ messages: nextMessages });
+    }
+    setForwardingContent(null);
+    showFeedback('success', `Forwarded locally to ${destinations.length} destination${destinations.length === 1 ? '' : 's'}.`, 'message');
+  }, [channel, forwardingContent, messagesState, persistScopeState, showFeedback]);
 
   const filteredMessages = messagesState.filter(msg => 
     msg.content.toLowerCase().includes(searchQuery.toLowerCase()) && !mutedUsers.has(msg.userId)
@@ -534,12 +830,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
           <div className="hidden lg:flex items-center gap-4 text-white/40">
              {hasInbox && (
-               <button aria-label="Inbox" onClick={() => setShowInbox(!showInbox)} className={`transition-colors relative ${showInbox ? 'text-primary' : 'hover:text-primary'}`}>
-                 <Inbox size={16} />
-                 <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-accent-danger text-[7px] font-bold flex items-center justify-center text-white shadow-[0_0_6px_rgba(255,42,109,0.35)]">2</span>
-               </button>
-             )}
-             <button aria-label="Notifications" className="hover:text-primary transition-colors"><Bell size={16} /></button>
+                <button aria-label="Inbox" onClick={() => setShowInbox(!showInbox)} className={`transition-colors relative ${showInbox ? 'text-primary' : 'hover:text-primary'}`}>
+                  <Inbox size={16} />
+                  {unreadInboxItems.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-accent-danger text-[7px] font-bold flex items-center justify-center text-white shadow-[0_0_6px_rgba(255,42,109,0.35)]">{Math.min(unreadInboxItems.length, 9)}</span>
+                  )}
+                </button>
+              )}
+              <button aria-label="Notifications" onClick={() => showFeedback('info', 'Notification routing is managed from Settings → Signal Alerts in this preview.', 'system')} className="hover:text-primary transition-colors"><Bell size={16} /></button>
               <div className="relative">
                  <button aria-label="Pinned Messages" onClick={() => setShowPinned(!showPinned)} className={`transition-colors relative ${showPinned ? 'text-primary' : 'hover:text-primary'}`}>
                    <Pin size={16} />
@@ -612,10 +910,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       <div className="flex-1 h-[1px] bg-accent-danger/40"></div>
                     </div>
                   )}
-                 <div 
-                    onContextMenu={(e) => handleContextMenu(e, msg.id)}
-                    className="flex text-xs hover:bg-white/5 px-1.5 -mx-1.5 py-0.5 rounded font-mono"
-                 >
+                  <div 
+                     id={buildMessageElementId(msg.id)}
+                     onContextMenu={(e) => handleContextMenu(e, msg.id)}
+                     className="flex text-xs hover:bg-white/5 px-1.5 -mx-1.5 py-0.5 rounded font-mono"
+                  >
                      <span className="text-white/30 text-[10px] select-none whitespace-nowrap shrink-0 pt-[1px]">{msg.timestamp}&nbsp;</span>
                      <div className="min-w-0">
                        <span className="font-bold whitespace-nowrap" style={{ color: user.color }}>{user.username}</span>
@@ -638,13 +937,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                       <div className="flex-1 h-[1px] bg-accent-danger/40"></div>
                     </div>
                   )}
-                   <div  
-                        onMouseEnter={(e) => { if (!e.buttons) setHoveredMessageId(msg.id); }}
-                        onMouseLeave={(e) => { if (!e.buttons && !reactionMenuMsgId) setHoveredMessageId(null); }}
-                        onContextMenu={(e) => handleContextMenu(e, msg.id)}
+                    <div  
+                         id={buildMessageElementId(msg.id)}
+                         onMouseEnter={(e) => { if (!e.buttons) setHoveredMessageId(msg.id); }}
+                         onMouseLeave={(e) => { if (!e.buttons && !reactionMenuMsgId) setHoveredMessageId(null); }}
+                         onContextMenu={(e) => handleContextMenu(e, msg.id)}
                         className={`flex gap-2.5 w-full group relative ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                       {!isMe && (
-                        <UserPopup user={user}>
+                        <UserPopup user={user} onDirectLink={() => showFeedback('info', `Direct profile links for ${user.username} are not exposed by the runtime yet.`, 'system')} onMoreOptions={() => showFeedback('info', `Additional profile actions for ${user.username} are not available in this preview.`, 'system')}>
                             <img src={user.avatar} className="w-7 h-7 rounded-full self-end mb-1 cursor-pointer hover:ring-2 hover:ring-primary transition-all shadow-lg" alt={user.username} />
                         </UserPopup>
                       )}
@@ -709,7 +1009,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                  label={mutedUsers.has(msg.userId) ? "Unmute User" : "Mute User"} 
                                  onClick={() => toggleMuteUser(msg.userId)} 
                                />
-                               <ActionBtn icon={<MoreHorizontal size={14} />} label="More" />
+                                <ActionBtn icon={<MoreHorizontal size={14} />} label="More" onClick={() => showFeedback('info', 'Open the message context menu for the full action list.', 'system')} />
                                
                                {reactionMenuMsgId === msg.id && (
                                     <div className="absolute top-full left-0 mt-1.5 p-1.5 glass-card rounded-r2 border border-white/10 shadow-2xl z-50 flex gap-0.5 animate-in zoom-in-95 min-w-[160px] flex-wrap justify-center">
@@ -743,15 +1043,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               </div>
             )}
             <div 
-                onMouseEnter={(e) => { if (!e.buttons) setHoveredMessageId(msg.id); }}
-                onMouseLeave={(e) => { if (!e.buttons && !reactionMenuMsgId) setHoveredMessageId(null); }}
-                onContextMenu={(e) => handleContextMenu(e, msg.id)}
+                id={buildMessageElementId(msg.id)}
+                 onMouseEnter={(e) => { if (!e.buttons) setHoveredMessageId(msg.id); }}
+                 onMouseLeave={(e) => { if (!e.buttons && !reactionMenuMsgId) setHoveredMessageId(null); }}
+                 onContextMenu={(e) => handleContextMenu(e, msg.id)}
                 onDoubleClick={() => { if (isMe) startEdit(msg); }}
                 className={`flex gap-5 group relative p-2.5 -mx-2.5 rounded-r1 transition-all hover:bg-white/[0.03] ${isSpecial ? 'bg-gradient-to-r from-primary/5 to-transparent border-l-2 border-primary/20' : ''}`}
             >
               {isSpecial && <div className="absolute left-0 top-2.5 bottom-2.5 w-[2px] bg-primary rounded-full shadow-glow"></div>}
 
-              <UserPopup user={user}>
+               <UserPopup user={user} onDirectLink={() => showFeedback('info', `Direct profile links for ${user.username} are not exposed by the runtime yet.`, 'system')} onMoreOptions={() => showFeedback('info', `Additional profile actions for ${user.username} are not available in this preview.`, 'system')}>
                  <div className="w-11 h-11 rounded-r2 overflow-hidden cursor-pointer ring-1 ring-white/10 hover:ring-primary transition-all shadow-xl mt-1 relative flex-shrink-0">
                     <img src={user.avatar} className="w-full h-full object-cover" alt={user.username} />
                     <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -837,7 +1138,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         label={mutedUsers.has(msg.userId) ? "Unmute User" : "Mute User"} 
                         onClick={() => toggleMuteUser(msg.userId)} 
                       />
-                      <ActionBtn icon={<MoreHorizontal size={14} />} label="More Actions" />
+                      <ActionBtn icon={<MoreHorizontal size={14} />} label="More Actions" onClick={() => showFeedback('info', 'Open the message context menu for the full action list.', 'system')} />
 
                       {reactionMenuMsgId === msg.id && (
                             <div className="absolute bottom-full right-0 mb-1.5 p-1.5 glass-card rounded-r2 border border-white/10 shadow-2xl z-50 flex gap-0.5 animate-in zoom-in-95 min-w-[160px] flex-wrap justify-center">
@@ -930,6 +1231,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         {/* Typing Indicator */}
         <TypingIndicator users={users} currentUserId="me" />
 
+        <div className="mb-2 px-1 flex items-center justify-between gap-2 text-[9px] font-mono tracking-[0.18em] uppercase">
+          <span className={`${chatSupport.mode === 'offline' ? 'text-accent-danger/80' : 'text-primary/70'}`}>
+            {chatSupport.mode === 'offline' ? 'offline preview' : 'local preview'}
+          </span>
+          <span className={`${composerFeedback?.tone === 'error' ? 'text-accent-danger/75' : composerFeedback?.tone === 'success' ? 'text-accent-success/80' : 'text-white/45'} text-right`}>{composerFeedback?.text || chatSupport.detail}</span>
+        </div>
+
         {/* Reply Preview Bar */}
         {replyingTo && (
           <div className="glass-card rounded-t-r2 border border-white/10 border-b-0 px-3 py-2.5 flex items-center gap-2.5 animate-in slide-in-from-bottom-2">
@@ -961,10 +1269,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             )}
             
             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
-            <button onClick={() => fileInputRef.current?.click()} className="p-3 text-white/30 hover:text-primary transition-colors" aria-label="Add attachment"><PlusCircle size={20} /></button>
-            {hasPolls && (
-              <button onClick={() => setShowPollCreator(!showPollCreator)} className={`p-2 transition-colors ${showPollCreator ? 'text-primary' : 'text-white/30 hover:text-primary'}`} aria-label="Create Poll">
-                <BarChart3 size={18} />
+             <button onClick={() => fileInputRef.current?.click()} className="p-3 text-white/30 hover:text-primary transition-colors" aria-label="Add attachment"><PlusCircle size={20} /></button>
+             {hasPolls && (
+               <button onClick={() => setShowPollCreator(!showPollCreator)} className={`p-2 transition-colors ${showPollCreator ? 'text-primary' : 'text-white/30 hover:text-primary'}`} aria-label="Create Poll">
+                 <BarChart3 size={18} />
               </button>
             )}
             
@@ -978,7 +1286,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 onKeyDown={handleKeyDown}
             />
             <div className="flex items-center gap-2.5 px-1.5">
-                <button className="p-2 text-white/40 hover:text-primary transition-all" aria-label="Stickers"><Sticker size={18} /></button>
+                <button onClick={() => showFeedback('info', 'Sticker transport is not wired yet; use emoji or text in local preview mode.', 'system')} className="p-2 text-white/40 hover:text-primary transition-all" aria-label="Stickers"><Sticker size={18} /></button>
                 <div className="relative">
                     <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`p-2 transition-all ${showEmojiPicker ? 'text-primary' : 'text-white/40 hover:text-primary'}`} aria-label="Emoji Picker"><Smile size={18} /></button>
                     {showEmojiPicker && (
@@ -1020,6 +1328,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       {forwardingContent !== null && hasForwarding && (
         <ForwardMessageModal
           messageContent={forwardingContent}
+          destinations={forwardDestinations}
+          onForward={handleForwardMessage}
           onClose={() => setForwardingContent(null)}
         />
       )}
@@ -1050,6 +1360,18 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           parentMessage={threadMessage}
           parentUser={getUser(threadMessage.userId)}
           allUsers={users}
+          replies={threadRepliesByParent[threadMessage.id] ?? []}
+          onSend={(content) => {
+            const nextThreadReplies = {
+              ...threadRepliesByParent,
+              [threadMessage.id]: [
+                ...(threadRepliesByParent[threadMessage.id] ?? []),
+                createLocalMessage(content, { replyToId: threadMessage.id }),
+              ],
+            };
+            setThreadRepliesByParent(nextThreadReplies);
+            persistScopeState({ threads: nextThreadReplies });
+          }}
           onClose={() => setThreadMessage(null)}
         />
       )}
@@ -1069,8 +1391,30 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
       {/* Inbox Panel */}
       {showInbox && hasInbox && (
-        <InboxPanel onClose={() => setShowInbox(false)} />
+        <InboxPanel
+          items={unreadInboxItems}
+          messages={messagesState}
+          users={users.map((user) => user.id === 'me' && localNickname.trim() ? { ...user, username: localNickname.trim() } : user)}
+          onJump={(item) => {
+            const nextReadIds = new Set(inboxReadIds);
+            nextReadIds.add(item.id);
+            setInboxReadIds(nextReadIds);
+            persistScopeState({ inboxReadIds: nextReadIds });
+            jumpToMessage(item.messageId);
+          }}
+          onMarkAllRead={() => {
+            const nextReadIds = new Set(inboxReadIds);
+            for (const item of unreadInboxItems) {
+              nextReadIds.add(item.id);
+            }
+            setInboxReadIds(nextReadIds);
+            persistScopeState({ inboxReadIds: nextReadIds });
+          }}
+          onClose={() => setShowInbox(false)}
+        />
       )}
+
+      <NotificationToast toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 };

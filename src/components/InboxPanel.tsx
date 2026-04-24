@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { Inbox, X, AtSign, Reply, Hash, Bell } from 'lucide-react';
-import { USERS, MOCK_MESSAGES } from '@/data';
+import { Message, User } from '@/types';
 
 interface InboxPanelProps {
+  items: InboxItem[];
+  messages: Message[];
+  users: User[];
+  onJump: (item: InboxItem) => void;
+  onMarkAllRead: () => void;
   onClose: () => void;
 }
 
-interface InboxItem {
+export interface InboxItem {
   id: string;
   type: 'mention' | 'reply';
   messageId: string;
@@ -16,18 +21,10 @@ interface InboxItem {
   read: boolean;
 }
 
-const MOCK_INBOX: InboxItem[] = [
-  { id: 'ib1', type: 'mention', messageId: 'm2', channelName: 'general', serverName: 'Nexus Underground', timestamp: '5 min ago', read: false },
-  { id: 'ib2', type: 'reply', messageId: 'm3', channelName: 'dev-ops', serverName: 'Nexus Underground', timestamp: '1 hour ago', read: false },
-  { id: 'ib3', type: 'mention', messageId: 'm5', channelName: 'random', serverName: 'Cyber Collective', timestamp: '3 hours ago', read: true },
-  { id: 'ib4', type: 'reply', messageId: 'm1', channelName: 'general', serverName: 'Nexus Underground', timestamp: '1 day ago', read: true },
-];
-
 type InboxFilter = 'all' | 'mentions' | 'replies';
 
-export const InboxPanel: React.FC<InboxPanelProps> = ({ onClose }) => {
+export const InboxPanel: React.FC<InboxPanelProps> = ({ items, messages, users, onJump, onMarkAllRead, onClose }) => {
   const [filter, setFilter] = useState<InboxFilter>('all');
-  const [items, setItems] = useState(MOCK_INBOX);
 
   const filtered = items.filter(item => {
     if (filter === 'mentions') return item.type === 'mention';
@@ -36,10 +33,6 @@ export const InboxPanel: React.FC<InboxPanelProps> = ({ onClose }) => {
   });
 
   const unreadCount = items.filter(i => !i.read).length;
-
-  const markAllRead = () => {
-    setItems(items.map(i => ({ ...i, read: true })));
-  };
 
   return (
     <div className="absolute right-0 top-[52px] bottom-0 w-[380px] z-50 glass-card border-l border-stroke flex flex-col animate-in slide-in-from-right duration-200">
@@ -56,7 +49,7 @@ export const InboxPanel: React.FC<InboxPanelProps> = ({ onClose }) => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={markAllRead} className="text-[10px] text-primary hover:underline font-bold">Mark all read</button>
+            <button onClick={onMarkAllRead} className="text-[10px] text-primary hover:underline font-bold">Mark all read</button>
             <button onClick={onClose} className="w-7 h-7 rounded-full glass-panel border border-stroke-subtle flex items-center justify-center text-text-secondary hover:text-primary transition-all">
               <X size={14} />
             </button>
@@ -88,10 +81,10 @@ export const InboxPanel: React.FC<InboxPanelProps> = ({ onClose }) => {
           </div>
         ) : (
           filtered.map(item => {
-            const msg = MOCK_MESSAGES.find(m => m.id === item.messageId);
-            const user = msg ? USERS.find(u => u.id === msg.userId) : null;
+            const msg = messages.find(m => m.id === item.messageId);
+            const user = msg ? users.find(u => u.id === msg.userId) : null;
             return (
-              <div key={item.id} className={`glass-card rounded-r2 p-3 border transition-all cursor-pointer group ${item.read ? 'border-stroke hover:border-stroke-strong' : 'border-primary/20 bg-primary/[0.03]'}`}>
+              <button key={item.id} onClick={() => onJump(item)} className={`w-full glass-card rounded-r2 p-3 border transition-all cursor-pointer group text-left ${item.read ? 'border-stroke hover:border-stroke-strong' : 'border-primary/20 bg-primary/[0.03]'}`}>
                 <div className="flex items-start gap-2.5">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${item.type === 'mention' ? 'bg-primary/10 text-primary' : 'bg-accent-purple/10 text-accent-purple'}`}>
                     {item.type === 'mention' ? <AtSign size={12} /> : <Reply size={12} />}
@@ -112,7 +105,7 @@ export const InboxPanel: React.FC<InboxPanelProps> = ({ onClose }) => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })
         )}

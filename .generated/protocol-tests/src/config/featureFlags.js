@@ -56,25 +56,25 @@ export const FEATURES = {
     activities: true,
     dmCalls: true,
     stageChannels: true,
-    voiceTextChat: true,
+    voiceTextChat: false,
     voiceControlBar: true,
     // ─── Channels ────────────────────────────────────────────
     textVoiceChannels: true,
     channelCategories: true,
-    forumChannels: true,
-    announcementChannels: true,
+    forumChannels: false,
+    announcementChannels: false,
     privateChannels: true,
-    channelFollowing: true,
-    scheduledEvents: true,
+    channelFollowing: false,
+    scheduledEvents: false,
     channelCreationFlow: true,
     channelPinsView: true,
     // ─── Server ──────────────────────────────────────────────
     serverSettings: true,
-    serverDiscovery: true,
-    rolesManagement: true,
+    serverDiscovery: false,
+    rolesManagement: false,
     membersManagement: true,
     serverBoost: false,
-    serverApplications: true,
+    serverApplications: false,
     joinViaInvite: true,
     vanityUrls: true,
     // ─── Community ───────────────────────────────────────────
@@ -86,8 +86,8 @@ export const FEATURES = {
     directMessages: true,
     messageRequests: true,
     // ─── Moderation ──────────────────────────────────────────
-    autoMod: true,
-    auditLog: true,
+    autoMod: false,
+    auditLog: false,
     timeout: true,
     roleHierarchyDragDrop: true,
     duplicateChannel: true,
@@ -112,3 +112,29 @@ export const FEATURES = {
     // ─── Other Implemented ───────────────────────────────────
     memberListPanel: true,
 };
+export const FEATURE_OVERRIDES_STORAGE_KEY = 'harmolyn:feature-overrides';
+export function readFeatureOverrides() {
+    if (typeof window === 'undefined') {
+        return {};
+    }
+    const raw = window.localStorage.getItem(FEATURE_OVERRIDES_STORAGE_KEY);
+    if (!raw) {
+        return {};
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        const overrides = {};
+        for (const [key, value] of Object.entries(parsed)) {
+            if (key in FEATURES && typeof value === 'boolean') {
+                overrides[key] = value;
+            }
+        }
+        return overrides;
+    }
+    catch {
+        return {};
+    }
+}
+export function resolveFeatureFlag(feature, overrides = readFeatureOverrides()) {
+    return overrides[feature] ?? FEATURES[feature];
+}

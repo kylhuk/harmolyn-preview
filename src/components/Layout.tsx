@@ -76,6 +76,7 @@ export const Layout: React.FC = () => {
   const [showJoinServer, setShowJoinServer] = useState(false);
   const [joinDraft, setJoinDraft] = useState('');
   const hasQuickSwitcher = useFeature('quickSwitcher');
+  const hasServerApplications = useFeature('serverApplications');
   const hasSeenRuntimeRef = useRef(Boolean(shellData.runtimeSnapshot?.identity?.peer_id?.trim()));
 
   useEffect(() => {
@@ -617,7 +618,7 @@ export const Layout: React.FC = () => {
         {state.showDonations && <DonationScreen key="donations" onClose={() => setState((s) => ({ ...s, showDonations: false }))} />}
         {state.showShop && <ShopScreen key="shop" onClose={() => setState((s) => ({ ...s, showShop: false }))} />}
         {state.showQuests && <QuestsScreen key="quests" onClose={() => setState((s) => ({ ...s, showQuests: false }))} />}
-        {state.showApplications && <ServerApplications key="apps" onClose={() => setState((s) => ({ ...s, showApplications: false }))} />}
+        {hasServerApplications && state.showApplications && <ServerApplications key="apps" onClose={() => setState((s) => ({ ...s, showApplications: false }))} />}
         {showScreenSharePanel && (
           <ScreenSharePanel
             key="screen-share"

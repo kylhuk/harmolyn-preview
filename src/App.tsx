@@ -1,10 +1,13 @@
 import { Layout } from "@/components/Layout";
 import { ContextMenuProvider } from "@/components/GlobalContextMenu";
+import { XoreinAppProviders } from "@/lib/xoreinClientProvider";
 
 const App = () => (
-  <ContextMenuProvider>
-    <Layout />
-  </ContextMenuProvider>
+  <XoreinAppProviders>
+    <ContextMenuProvider>
+      <Layout />
+    </ContextMenuProvider>
+  </XoreinAppProviders>
 );
 
 export default App;

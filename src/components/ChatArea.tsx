@@ -17,6 +17,7 @@ import { InboxPanel } from '@/components/InboxPanel';
 import { MentionAutocomplete } from '@/components/MentionAutocomplete';
 import { NotificationToast, useToasts } from '@/components/NotificationToast';
 import { useFeature } from '@/hooks/useFeature';
+import { useSendChannelMessage, useSendDmMessage, useEditMessage, useDeleteMessage } from '@/hooks/runtime/mutations';
 import { useContextMenu } from '@/components/GlobalContextMenu';
 import { readShellRuntimeData } from '@/data';
 import {
@@ -256,6 +257,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   const hasInbox = useFeature('inbox');
   const hasMentionAutocomplete = useFeature('mentionAutocomplete');
 
+  const sendChannelMutation = useSendChannelMessage();
+  const sendDmMutation = useSendDmMessage();
+  const editMutation = useEditMessage();
+  const deleteMutation = useDeleteMessage();
+
   const [threadMessage, setThreadMessage] = useState<Message | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Message | null>(null);
@@ -405,7 +411,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     ...overrides,
   }), [replyingTo]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
 
@@ -440,7 +446,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         setInputValue('');
         setReplyingTo(null);
         persistScopeState({ messages: nextMessages });
-        showFeedback('info', chatSupport.detail, 'message');
         return;
       }
 
@@ -450,7 +455,6 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         setInputValue('');
         setReplyingTo(null);
         persistScopeState({ messages: nextMessages });
-        showFeedback('info', chatSupport.detail, 'message');
         return;
       }
 
@@ -458,12 +462,28 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       return;
     }
 
-    const nextMessages = [...messagesState, createLocalMessage(inputValue)];
-    setMessagesState(nextMessages);
-    setInputValue('');
-    setReplyingTo(null);
-    persistScopeState({ messages: nextMessages });
-    showFeedback('info', chatSupport.detail, 'message');
+    if (chatSupport.mode !== 'offline' && channel?.id) {
+      const content = inputValue;
+      setInputValue('');
+      setReplyingTo(null);
+      try {
+        if (isDM) {
+          await sendDmMutation.mutateAsync({ dmId: channel.id, content });
+        } else {
+          await sendChannelMutation.mutateAsync({ channelId: channel.id, content });
+        }
+      } catch (error) {
+        setInputValue(content);
+        showFeedback('error', error instanceof Error ? error.message : 'Failed to send message.', 'system');
+      }
+    } else {
+      const nextMessages = [...messagesState, createLocalMessage(inputValue)];
+      setMessagesState(nextMessages);
+      setInputValue('');
+      setReplyingTo(null);
+      persistScopeState({ messages: nextMessages });
+      showFeedback('info', chatSupport.detail, 'message');
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -505,28 +525,39 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     });
   };
 
+  const removeLocalMessage = (msgId: string) => {
+    const nextMessages = messagesState.filter(m => m.id !== msgId);
+    const nextDeletedIds = new Set(deletedMessageIds);
+    nextDeletedIds.add(msgId);
+    setMessagesState(nextMessages);
+    setDeletedMessageIds(nextDeletedIds);
+    persistScopeState({ messages: nextMessages, deletedMessageIds: nextDeletedIds });
+  };
+
   const deleteMessage = (msgId: string) => {
     if (hasDeleteConfirm) {
       const msg = messagesState.find(m => m.id === msgId);
       if (msg) setDeleteTarget(msg);
     } else {
-      const nextMessages = messagesState.filter(m => m.id !== msgId);
-      const nextDeletedIds = new Set(deletedMessageIds);
-      nextDeletedIds.add(msgId);
-      setMessagesState(nextMessages);
-      setDeletedMessageIds(nextDeletedIds);
-      persistScopeState({ messages: nextMessages, deletedMessageIds: nextDeletedIds });
+      if (!msgId.startsWith(MESSAGE_ID_PREFIX) && chatSupport.mode !== 'offline') {
+        deleteMutation.mutate(
+          { messageId: msgId },
+          { onError: (error) => showFeedback('error', error instanceof Error ? error.message : 'Failed to delete message.', 'system') },
+        );
+      }
+      removeLocalMessage(msgId);
     }
   };
 
   const confirmDelete = () => {
     if (deleteTarget) {
-      const nextMessages = messagesState.filter(m => m.id !== deleteTarget.id);
-      const nextDeletedIds = new Set(deletedMessageIds);
-      nextDeletedIds.add(deleteTarget.id);
-      setMessagesState(nextMessages);
-      setDeletedMessageIds(nextDeletedIds);
-      persistScopeState({ messages: nextMessages, deletedMessageIds: nextDeletedIds });
+      if (!deleteTarget.id.startsWith(MESSAGE_ID_PREFIX) && chatSupport.mode !== 'offline') {
+        deleteMutation.mutate(
+          { messageId: deleteTarget.id },
+          { onError: (error) => showFeedback('error', error instanceof Error ? error.message : 'Failed to delete message.', 'system') },
+        );
+      }
+      removeLocalMessage(deleteTarget.id);
       setDeleteTarget(null);
     }
   };
@@ -554,15 +585,21 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   const saveEdit = () => {
     if (!editingMsgId || !editValue.trim()) return;
-    const nextMessages = messagesState.map(m => 
-      m.id === editingMsgId 
-        ? { ...m, content: editValue, editedAt: formatTimestamp() } 
-        : m
+    const msgId = editingMsgId;
+    const content = editValue;
+    setEditingMsgId(null);
+    setEditValue('');
+    if (!msgId.startsWith(MESSAGE_ID_PREFIX) && chatSupport.mode !== 'offline') {
+      editMutation.mutate(
+        { messageId: msgId, content },
+        { onError: (error) => showFeedback('error', error instanceof Error ? error.message : 'Failed to edit message.', 'system') },
+      );
+    }
+    const nextMessages = messagesState.map(m =>
+      m.id === msgId ? { ...m, content, editedAt: formatTimestamp() } : m,
     );
     setMessagesState(nextMessages);
     persistScopeState({ messages: nextMessages });
-    setEditingMsgId(null);
-    setEditValue('');
   };
 
   const cancelEdit = () => {

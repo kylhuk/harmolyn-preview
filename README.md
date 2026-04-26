@@ -117,6 +117,39 @@ Yes — xorein can run in relay/bootstrap modes. Harmolyn stays a client.
 
 ---
 
+## Releasing
+
+Releases are created automatically by pushing a semver tag:
+
+```bash
+git tag v1.2.3 && git push origin v1.2.3
+```
+
+This triggers `.github/workflows/release.yml` which builds signed installers for Linux (`.deb`, `.AppImage`), macOS (`.dmg`), and Windows (`.msi`, `.exe`), then publishes a GitHub Release with auto-generated notes.
+
+**Required GitHub repository secrets:**
+
+| Secret | Purpose |
+|--------|---------|
+| `TAURI_SIGNING_PRIVATE_KEY` | Updater bundle signing key (generate: `npx tauri signer generate`) |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Password for the above key |
+| `APPLE_CERTIFICATE` | Base64-encoded Developer ID Application certificate (macOS signing) |
+| `APPLE_CERTIFICATE_PASSWORD` | Password for the certificate |
+| `APPLE_SIGNING_IDENTITY` | Developer ID string (e.g. `Developer ID Application: Your Name (TEAMID)`) |
+| `APPLE_ID` | Apple ID email (notarization) |
+| `APPLE_PASSWORD` | App-specific password (notarization) |
+| `APPLE_TEAM_ID` | Apple Developer Team ID |
+| `WINDOWS_CERTIFICATE` | Base64-encoded Windows code-signing certificate (optional) |
+| `WINDOWS_CERTIFICATE_PASSWORD` | Password for the Windows certificate |
+
+If signing secrets are absent the workflow still produces unsigned artifacts.
+
+To update the updater public key in `src-tauri/tauri.conf.json`, run `npx tauri signer generate` once and paste the public key into the `plugins.updater.pubkey` field.
+
+**Icons:** Replace the placeholder files in `src-tauri/icons/` with real icons. Run `npx tauri icon path/to/your-icon-1024.png` to auto-generate all required sizes from a single source image.
+
+---
+
 ## License
 
 - Runtime/client code: **AGPL-3.0** (see LICENSE)

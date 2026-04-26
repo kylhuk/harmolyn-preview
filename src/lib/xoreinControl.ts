@@ -192,6 +192,228 @@ export async function sendVoiceFrame(
   return refreshRuntimeSnapshot(runtimeSnapshot, undefined);
 }
 
+export interface XoreinIdentityRecord {
+  id: string;
+  peer_id: string;
+  public_key?: string;
+  created_at?: string;
+  profile?: { display_name?: string; bio?: string };
+}
+
+export interface XoreinMessageRecord {
+  id: string;
+  scope_type: string;
+  scope_id: string;
+  server_id?: string;
+  sender_peer_id: string;
+  body: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface XoreinDmRecord {
+  id: string;
+  participants: string[];
+  created_at?: string;
+}
+
+export interface XoreinChannelRecord {
+  id: string;
+  server_id: string;
+  name: string;
+  voice: boolean;
+  created_at?: string;
+}
+
+export async function sendChannelMessage(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  channelId: string,
+  content: string,
+): Promise<XoreinMessageRecord> {
+  const record = await requestControlApi<XoreinMessageRecord>(
+    runtimeSnapshot, 'POST', `/v1/channels/${channelId}/messages`, { body: content },
+  );
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+  return record;
+}
+
+export async function sendDmMessage(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  dmId: string,
+  content: string,
+): Promise<XoreinMessageRecord> {
+  const record = await requestControlApi<XoreinMessageRecord>(
+    runtimeSnapshot, 'POST', `/v1/dms/${dmId}/messages`, { body: content },
+  );
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+  return record;
+}
+
+export async function editMessage(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  messageId: string,
+  content: string,
+): Promise<XoreinMessageRecord> {
+  const record = await requestControlApi<XoreinMessageRecord>(
+    runtimeSnapshot, 'PATCH', `/v1/messages/${messageId}`, { body: content },
+  );
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+  return record;
+}
+
+export async function deleteMessage(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  messageId: string,
+): Promise<void> {
+  await requestControlApi<void>(runtimeSnapshot, 'DELETE', `/v1/messages/${messageId}`);
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+}
+
+export async function createChannel(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  serverId: string,
+  name: string,
+  voice = false,
+): Promise<XoreinChannelRecord> {
+  const record = await requestControlApi<XoreinChannelRecord>(
+    runtimeSnapshot, 'POST', `/v1/servers/${serverId}/channels`, { name: name.trim(), voice },
+  );
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+  return record;
+}
+
+export async function createIdentity(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  displayName: string,
+  bio?: string,
+): Promise<XoreinIdentityRecord> {
+  const record = await requestControlApi<XoreinIdentityRecord>(
+    runtimeSnapshot, 'POST', '/v1/identities',
+    { profile: { display_name: displayName.trim(), bio: bio?.trim() ?? '' } },
+  );
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+  return record;
+}
+
+export async function getIdentityBackup(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+): Promise<string> {
+  const result = await requestControlApi<{ backup: string }>(
+    runtimeSnapshot, 'GET', '/v1/identities/backup',
+  );
+  return result.backup;
+}
+
+export async function restoreIdentity(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  backup: string,
+): Promise<XoreinIdentityRecord> {
+  const record = await requestControlApi<XoreinIdentityRecord>(
+    runtimeSnapshot, 'POST', '/v1/identities/restore', { backup },
+  );
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+  return record;
+}
+
+export async function listDms(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+): Promise<XoreinDmRecord[]> {
+  const result = await requestControlApi<{ dms: XoreinDmRecord[] }>(
+    runtimeSnapshot, 'GET', '/v1/dms',
+  );
+  return result.dms ?? [];
+}
+
+export async function createDm(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  peerId: string,
+): Promise<XoreinDmRecord> {
+  const record = await requestControlApi<XoreinDmRecord>(
+    runtimeSnapshot, 'POST', '/v1/dms', { peer_id: peerId },
+  );
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+  return record;
+}
+
+export async function addPeer(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  peerId: string,
+): Promise<void> {
+  await requestControlApi<void>(runtimeSnapshot, 'POST', '/v1/peers/manual', { peer_id: peerId });
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+}
+
+export async function removePeer(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  peerId: string,
+): Promise<void> {
+  await requestControlApi<void>(runtimeSnapshot, 'DELETE', `/v1/peers/manual/${encodeURIComponent(peerId)}`);
+  await refreshRuntimeSnapshot(runtimeSnapshot, undefined);
+}
+
+export function subscribeRuntimeEvents(
+  runtimeSnapshot: XoreinRuntimeSnapshot | null,
+  onStateChange: () => void,
+  onError?: (error: Error) => void,
+): () => void {
+  const endpoint = runtimeSnapshot?.control_endpoint?.trim() || runtimeSnapshot?.settings?.control_endpoint?.trim() || '';
+  const token = readControlToken();
+  if (!endpoint || !token) {
+    return () => undefined;
+  }
+
+  const url = new URL('/v1/events', endpoint);
+  let closed = false;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let source: EventSource | null = null;
+
+  const open = () => {
+    if (closed) {
+      return;
+    }
+    try {
+      const es = new EventSource(url.toString());
+      source = es;
+
+      es.addEventListener('state.changed', () => {
+        onStateChange();
+      });
+
+      es.addEventListener('message', (event) => {
+        try {
+          const data = JSON.parse(event.data as string) as { type?: string };
+          if (data?.type === 'state.changed' || data?.type === 'state') {
+            onStateChange();
+          }
+        } catch {
+          // non-JSON event; ignore
+        }
+      });
+
+      es.addEventListener('error', () => {
+        es.close();
+        source = null;
+        if (!closed) {
+          retryTimer = setTimeout(open, 3000);
+        }
+      });
+    } catch (err) {
+      onError?.(err instanceof Error ? err : new Error(String(err)));
+    }
+  };
+
+  open();
+
+  return () => {
+    closed = true;
+    if (retryTimer !== null) {
+      clearTimeout(retryTimer);
+    }
+    source?.close();
+    source = null;
+  };
+}
+
 function publishSnapshot(
   runtimeSnapshot: XoreinRuntimeSnapshot,
   session: {
@@ -269,7 +491,7 @@ function createSessionSnapshot(
 
 async function requestControlApi<T>(
   runtimeSnapshot: XoreinRuntimeSnapshot | null,
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<T> {

@@ -61,27 +61,27 @@ export const FEATURES = {
   activities: true,
   dmCalls: true,
   stageChannels: true,
-  voiceTextChat: true,
+  voiceTextChat: false,
   voiceControlBar: true,
 
   // ─── Channels ────────────────────────────────────────────
   textVoiceChannels: true,
   channelCategories: true,
-  forumChannels: true,
-  announcementChannels: true,
+  forumChannels: false,
+  announcementChannels: false,
   privateChannels: true,
-  channelFollowing: true,
-  scheduledEvents: true,
+  channelFollowing: false,
+  scheduledEvents: false,
   channelCreationFlow: true,
   channelPinsView: true,
 
   // ─── Server ──────────────────────────────────────────────
   serverSettings: true,
-  serverDiscovery: true,
-  rolesManagement: true,
+  serverDiscovery: false,
+  rolesManagement: false,
   membersManagement: true,
   serverBoost: false,
-  serverApplications: true,
+  serverApplications: false,
   joinViaInvite: true,
   vanityUrls: true,
 
@@ -96,8 +96,8 @@ export const FEATURES = {
   messageRequests: true,
 
   // ─── Moderation ──────────────────────────────────────────
-  autoMod: true,
-  auditLog: true,
+  autoMod: false,
+  auditLog: false,
   timeout: true,
   roleHierarchyDragDrop: true,
   duplicateChannel: true,

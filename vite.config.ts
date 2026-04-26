@@ -6,6 +6,7 @@ import { componentTagger } from 'lovable-tagger';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      base: process.env.TAURI_ENV_PLATFORM ? './' : '/',
       server: {
         port: 8080,
         host: '0.0.0.0',

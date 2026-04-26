@@ -146,6 +146,7 @@ export const ServerSettingsScreen: React.FC<ServerSettingsScreenProps> = ({ serv
   const [adminState, setAdminState] = useState(() => createInitialAdminState(server));
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [copiedInviteCode, setCopiedInviteCode] = useState<string | null>(null);
+  const hasRoles = useFeature('rolesManagement');
   const hasAuditLog = useFeature('auditLog');
   const hasAutoMod = useFeature('autoMod');
 
@@ -339,7 +340,7 @@ export const ServerSettingsScreen: React.FC<ServerSettingsScreenProps> = ({ serv
 
   const sections: { id: SettingsSection; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Settings size={16} /> },
-    { id: 'roles', label: 'Roles', icon: <Shield size={16} /> },
+    ...(hasRoles ? [{ id: 'roles' as SettingsSection, label: 'Roles', icon: <Shield size={16} /> }] : []),
     { id: 'channels', label: 'Channels', icon: <Hash size={16} /> },
     { id: 'members', label: 'Members', icon: <Users size={16} /> },
     { id: 'invites', label: 'Invites', icon: <Link size={16} /> },

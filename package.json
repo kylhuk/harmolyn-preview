@@ -23,7 +23,7 @@
     "@tauri-apps/plugin-updater": "^2",
     "autoprefixer": "^10.4.24",
     "framer-motion": "^12.34.2",
-    "lovable-tagger": "^1.1.13",
+    "lovable-tagger": "^1.3.0",
     "lucide-react": "0.460.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
